@@ -29,7 +29,8 @@ module.exports = (env) => {
                 'redux',
                 'redux-thunk',
                 'react-router-redux',
-                'jquery'
+                'jquery',
+                '@aspnet/signalr-client'
             ],
         },
         output: {
