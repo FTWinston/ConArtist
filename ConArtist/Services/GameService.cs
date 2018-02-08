@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace ConArtist.Services
@@ -56,7 +57,34 @@ namespace ConArtist.Services
         {
             var game = new Game(CurrentGames.Count, numSimultaneousDrawings, numDrawSteps, canChooseImposter);
             CurrentGames.Add(game.ID, game);
+
+            new Thread(async () =>
+            {
+                while(await ProcessGame(game))
+                    ;
+            }).Start();
+
             return game;
+        }
+
+        private async Task<bool> ProcessGame(Game game)
+        {
+            await WaitForStart(game);
+            await SelectOwners(game);
+            await WaitForDrawingSetup(game);
+            await SetPlayerOrder(game);
+
+            for (int iLap = 0; iLap < game.NumDrawLaps; iLap++)
+                for (int iStep = 0; iStep < game.Players.Count; iStep++)
+                {
+                    await AllPlayersDrawOnce(game);
+                }
+
+            foreach (var drawing in game.Drawings.Values)
+                await PerformVote(drawing);
+
+            await FinishGame(game);
+            return await EveryoneGoesAgain(game);
         }
 
         public void RemoveGame(int gameID)
@@ -73,6 +101,20 @@ namespace ConArtist.Services
             game.AddPlayer(player);
 
             return player.ID;
+        }
+        
+        private async Task AllPlayersDrawOnce(Game game)
+        {
+            await Task.WhenAll(game.Drawings.Values.Select(async drawing => await AdvanceAndDraw(game, drawing)));
+        }
+
+        private async Task AdvanceAndDraw(Game game, Drawing drawing)
+        {
+            drawing.CurrentDrawer = game.NextPlayers[drawing.CurrentDrawer.ID];
+
+            game.FirePromptDraw(drawing);
+
+            // TODO: async wait til DrawLine is called for this particular drawing ... possibly use an EventWaitHandle.
         }
 
         public void StartGame(int gameID)
@@ -225,7 +267,7 @@ namespace ConArtist.Services
 
             if (numDrawingsWithOwner != game.NumSimultaneousDrawings)
                 throw new Exception($"Only {numDrawingsWithOwner} / {game.NumSimultaneousDrawings} drawings in game {game.ID} are with their owner");
-
+            /*
             game.NumDrawSteps++;
 
             if (game.NumDrawSteps < game.MaxDrawSteps)
@@ -237,6 +279,7 @@ namespace ConArtist.Services
                 game.Status = GameStatus.Voting;
                 game.VoteDrawing = GetNextVoteDrawing(game);
             }
+            */
         }
 
         public void Vote(int gameID, int votingPlayerID, int drawingID, int chosenPlayerID)

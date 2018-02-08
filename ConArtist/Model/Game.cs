@@ -5,12 +5,11 @@ namespace ConArtist.Model
 {
     public class Game
     {
-        public Game(int id, int numSimultaneousDrawings, int numDrawSteps, bool canChooseImposter)
+        public Game(int id, int numSimultaneousDrawings, int numDrawLaps, bool canChooseImposter)
         {
             ID = id;
             NumSimultaneousDrawings = numSimultaneousDrawings;
-            MaxDrawSteps = numDrawSteps;
-            NumDrawSteps = 0;
+            NumDrawLaps = numDrawLaps;
             CanChooseImposter = canChooseImposter;
         }
 
@@ -46,8 +45,7 @@ namespace ConArtist.Model
         public void RemoveAllDrawings() { _drawings.Clear(); }
 
         public int NumSimultaneousDrawings { get; }
-        public int NumDrawSteps { get; set; }
-        public int MaxDrawSteps { get; }
+        public int NumDrawLaps { get; }
         public bool CanChooseImposter { get; }
 
         private Drawing _voteDrawing;
