@@ -94,8 +94,8 @@ namespace ConArtist.Services
 
         private void InitializeGame(Game game)
         {
-            AllocateOwners(game);
             SetupPlayerOrder(game);
+            AllocateOwners(game);
             game.Status = GameStatus.Describing;
         }
 
@@ -179,7 +179,7 @@ namespace ConArtist.Services
                 throw new Exception($"Player {playerID} is not currently drawing {drawingID} in game " + gameID);
 
             drawing.Lines.Add(new Line(player, points));
-            drawing.PreviousDrawer = drawing.CurrentDrawer;
+            drawing.CurrentDrawer.IsDrawing = false;
 
             game.FireLineAdded(player, drawing);
 
@@ -189,7 +189,7 @@ namespace ConArtist.Services
 
         private bool HaveAllPlayersDrawn(Game game)
         {
-            return game.Drawings.Values.All(d => d.CurrentDrawer == d.PreviousDrawer);
+            return !game.Drawings.Values.Any(d => d.CurrentDrawer.IsDrawing);
         }
 
         private void SetupPlayerOrder(Game game)
@@ -198,8 +198,15 @@ namespace ConArtist.Services
 
             var players = RandomizeOrder(game.Players.Values);
 
-            for (int iOrder = 0; iOrder < players.Count; iOrder++)
-                game.NextPlayers.Add(players[iOrder].ID, players[iOrder + 1]);
+            for (int iOrder = 1; iOrder < players.Count; iOrder++)
+            {
+                var player = players[iOrder - 1];
+                var nextPlayer = players[iOrder];
+
+                player.IsDrawing = false;
+                player.IsSettingUpDrawing = false;
+                game.NextPlayers.Add(player.ID, nextPlayer);
+            }
 
             game.NextPlayers.Add(players[players.Count - 1].ID, players[0]);
         }
@@ -209,15 +216,17 @@ namespace ConArtist.Services
             int numDrawingsWithOwner = 0;
             foreach (var drawing in game.Drawings.Values)
             {
-                drawing.CurrentDrawer = game.NextPlayers[drawing.PreviousDrawer.ID];
+                drawing.CurrentDrawer = game.NextPlayers[drawing.CurrentDrawer.ID];
 
                 if (drawing.CurrentDrawer == drawing.Owner)
                 {
-                    drawing.PreviousDrawer = drawing.CurrentDrawer;
                     numDrawingsWithOwner++;
                 }
                 else
+                {
+                    drawing.CurrentDrawer.IsDrawing = true;
                     game.FirePromptDraw(drawing);
+                }
             }
 
             if (numDrawingsWithOwner == 0)

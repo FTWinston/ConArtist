@@ -7,7 +7,7 @@ namespace ConArtist.Model
         public Drawing(int id, Player owner, Player imposter, string subject, string clue)
         {
             ID = id;
-            Owner = PreviousDrawer = owner;
+            Owner = CurrentDrawer = owner;
             Imposter = imposter;
             Subject = subject;
             Clue = clue;
@@ -17,7 +17,6 @@ namespace ConArtist.Model
         public Player Owner { get; }
         public Player Imposter { get; }
         public Player CurrentDrawer { get; set; }
-        public Player PreviousDrawer { get; set; }
         public string Subject { get; }
         public string Clue { get; }
         public List<Line> Lines { get; } = new List<Line>();

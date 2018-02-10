@@ -13,5 +13,6 @@
         public string Name { get; }
         public string Color { get; }
         public bool IsSettingUpDrawing { get; set; } = false;
+        public bool IsDrawing { get; set; } = false;
     }
 }
