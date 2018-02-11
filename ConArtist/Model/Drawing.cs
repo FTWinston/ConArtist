@@ -7,14 +7,14 @@ namespace ConArtist.Model
         public Drawing(int id, Player owner, Player imposter, string subject, string clue)
         {
             ID = id;
-            Owner = CurrentDrawer = owner;
+            Commissioner = CurrentDrawer = owner;
             Imposter = imposter;
             Subject = subject;
             Clue = clue;
         }
 
         public int ID { get; }
-        public Player Owner { get; }
+        public Player Commissioner { get; }
         public Player Imposter { get; }
         public Player CurrentDrawer { get; set; }
         public string Subject { get; }

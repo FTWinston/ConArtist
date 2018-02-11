@@ -4,7 +4,7 @@
     {
         Open = 1,
         Describing = 2,
-        Active = 3,
+        Drawing = 3,
         Voting = 4,
         Finished = 5,
     }

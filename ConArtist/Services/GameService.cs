@@ -113,8 +113,6 @@ namespace ConArtist.Services
 
             if (player.IsBusy)
                 ; // TODO: something ... are they drawing or setting up?
-            //else if (player.IsVoting)
-                //;
 
             // remove from nextPlayers (key and value)
             Player nextPlayer;
@@ -167,7 +165,7 @@ namespace ConArtist.Services
                 ownerPlayers.Add(player);
             }
 
-            game.FireWaitingForOwners();
+            game.FireWaitingForPlayers();
         }
 
         private List<T> RandomizeOrder<T>(IEnumerable<T> values)
@@ -215,7 +213,7 @@ namespace ConArtist.Services
 
             if (HaveAllDrawingsBeenAdded(game))
             {
-                game.Status = GameStatus.Active;
+                game.Status = GameStatus.Drawing;
                 AdvanceDrawingsToNextPlayers(game);
             }
         }
@@ -228,7 +226,7 @@ namespace ConArtist.Services
         public void AddLine(int gameID, int playerID, int drawingID, Point[] points)
         {
             Game game = GetGame(gameID);
-            EnsureStatus(game, GameStatus.Active);
+            EnsureStatus(game, GameStatus.Drawing);
             Player player = GetPlayer(game, playerID);
             Drawing drawing = GetDrawing(game, drawingID);
 
@@ -273,7 +271,7 @@ namespace ConArtist.Services
             {
                 drawing.CurrentDrawer = game.NextPlayers[drawing.CurrentDrawer.ID];
 
-                if (drawing.CurrentDrawer == drawing.Owner)
+                if (drawing.CurrentDrawer == drawing.Commissioner)
                 {
                     numDrawingsWithOwner++;
                 }

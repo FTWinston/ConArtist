@@ -50,7 +50,7 @@ namespace ConArtist.Model
             }
         }
 
-        public void FireWaitingForOwners()
+        public void FireWaitingForPlayers()
         {
             WaitingForPlayers?.Invoke(this, new GameEventArgs(this));
         }

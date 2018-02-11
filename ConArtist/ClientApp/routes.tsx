@@ -1,12 +1,15 @@
 import * as React from 'react';
 import { Route } from 'react-router-dom';
-import { Layout } from './components/Layout';
 import Home from './components/Home';
-import FetchData from './components/FetchData';
-import Counter from './components/Counter';
+import CreateGame from './components/CreateGame';
+import PickGame from './components/PickGame';
+import PlayerSetup from './components/PlayerSetup';
+import Game from './components/Game';
 
-export const routes = <Layout>
+export const routes = <div className="fullScreen">
     <Route exact path='/' component={ Home } />
-    <Route path='/counter' component={ Counter } />
-    <Route path='/fetchdata/:startDateIndex?' component={ FetchData } />
-</Layout>;
+    <Route path='/create' component={CreateGame} />
+    <Route path='/join' component={PickGame} />
+    <Route path='/game/:gameID' component={Game} />
+    <Route path='/game/:gameID/join' component={PlayerSetup} />
+</div>;

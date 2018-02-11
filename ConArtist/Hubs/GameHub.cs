@@ -19,6 +19,7 @@ namespace ConArtist.Hubs
         void PromptVote(int drawingID);
         void IndicateVoted(int playerID);
         void ShowVoteResult(int drawingID, IReadOnlyCollection<int> playerIDs, IReadOnlyCollection<int> votes);
+        void ShowEndGame(IReadOnlyCollection<int> playerIDs, IReadOnlyCollection<int> scores);
     }
 
     public class GameHub : Hub<IGameHubCommands>
@@ -33,7 +34,7 @@ namespace ConArtist.Hubs
         private const string GameID = "GameID";
         private const string PlayerID = "PlayerID";
 
-        public string CreateGame(int numSimultaneousDrawings, int numDrawSteps, bool canChoose)
+        public async Task<string> CreateGame(int numSimultaneousDrawings, int numDrawSteps, bool canChoose)
         {
             var game = GameService.CreateGame(numSimultaneousDrawings, numDrawSteps, canChoose);
 
@@ -47,13 +48,21 @@ namespace ConArtist.Hubs
             game.VoteStarted += (o, e) => PromptVote(gameID, e.Drawing);
             game.VoteFinished += (o, e) => ShowVoteResult(gameID, e.Drawing);
 
+            await ConnectToGame(game.ID);
+
             return gameID;
         }
-        
+
+        public async Task ConnectToGame(int gameID)
+        {
+            await Groups.AddAsync(Context.ConnectionId, gameID.ToString());
+            Context.Connection.Metadata[GameID] = gameID;
+            SendPlayerList(gameID);
+        }
+
         public async Task JoinGame(int gameID, string name, byte color)
         {
             int playerID = GameService.JoinGame(gameID, Context.ConnectionId, name, color);
-            Context.Connection.Metadata[GameID] = gameID;
             Context.Connection.Metadata[PlayerID] = playerID;
             
             await Groups.AddAsync(Context.ConnectionId, gameID.ToString());
@@ -65,48 +74,42 @@ namespace ConArtist.Hubs
             var gameID = GetIntFromMetadata(GameID);
             var playerID = GetIntFromMetadata(PlayerID);
 
-            if (GameService.LeaveGame(gameID, playerID))
-                SendPlayerList(gameID);
+            if (gameID.HasValue && playerID.HasValue
+                && GameService.LeaveGame(gameID.Value, playerID.Value))
+                SendPlayerList(gameID.Value);
 
             return base.OnDisconnectedAsync(exception);
         }
-
-        public void SetupDrawing(string subject, string clue)
+        
+        public void SetupDrawing(string subject, string clue, int? imposterPlayerID = null)
         {
-            var gameID = GetIntFromMetadata(GameID);
-            var playerID = GetIntFromMetadata(PlayerID);
-            GameService.SetupDrawing(gameID, playerID, subject, clue, null);
-        }
-
-        public void SetupDrawing(string subject, string clue, int imposterPlayerID)
-        {
-            var gameID = GetIntFromMetadata(GameID);
-            var playerID = GetIntFromMetadata(PlayerID);
+            var gameID = GetIntFromMetadata(GameID).Value;
+            var playerID = GetIntFromMetadata(PlayerID).Value;
             GameService.SetupDrawing(gameID, playerID, subject, clue, imposterPlayerID);
         }
 
         public void AddLine(int drawingID, Point[] points)
         {
-            var gameID = GetIntFromMetadata(GameID);
-            var playerID = GetIntFromMetadata(PlayerID);
+            var gameID = GetIntFromMetadata(GameID).Value;
+            var playerID = GetIntFromMetadata(PlayerID).Value;
             GameService.AddLine(gameID, playerID, drawingID, points);
         }
 
         public void Vote(int drawingID, int suspectPlayerID)
         {
-            var gameID = GetIntFromMetadata(GameID);
-            var playerID = GetIntFromMetadata(PlayerID);
+            var gameID = GetIntFromMetadata(GameID).Value;
+            var playerID = GetIntFromMetadata(PlayerID).Value;
             GameService.Vote(gameID, playerID, drawingID, suspectPlayerID);
             Clients.Group(gameID.ToString()).IndicateVoted(playerID);
         }
 
 
 
-        private int GetIntFromMetadata(string key)
+        private int? GetIntFromMetadata(string key)
         {
             var objVal = Context.Connection.Metadata[key];
             if (objVal == null || objVal is int)
-                throw new Exception($"Connection doesn't have {key} metadata value");
+                return null;
             return (int)objVal;
         }
 
@@ -120,9 +123,13 @@ namespace ConArtist.Hubs
         {
             switch (status)
             {
-                // TODO: send whatever depending on new status
+                case GameStatus.Describing:
+                case GameStatus.Drawing:
+                case GameStatus.Voting:
+                case GameStatus.Finished:
+                    break;
+                    // TODO: send whatever depending on new status
             }
-            throw new NotImplementedException();
         }
 
         private void WaitingForPlayers(string gameID, IReadOnlyCollection<Player> players)
