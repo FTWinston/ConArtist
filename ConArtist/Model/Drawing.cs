@@ -20,7 +20,7 @@ namespace ConArtist.Model
         public string Subject { get; }
         public string Clue { get; }
         public List<Line> Lines { get; } = new List<Line>();
-        public Dictionary<int, Player> Votes { get; } = new Dictionary<int, Player>();
+        public SortedDictionary<int, int> Votes { get; } = new SortedDictionary<int, int>();
         public HashSet<int> VotedPlayers { get; } = new HashSet<int>();
     }
 }

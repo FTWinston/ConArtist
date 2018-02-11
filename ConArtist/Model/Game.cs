@@ -26,24 +26,12 @@ namespace ConArtist.Model
                 StatusChanged?.Invoke(this, new GameEventArgs(this));
             }
         }
-
-        private Dictionary<int, Player> _players { get; } = new Dictionary<int, Player>();
-        public IReadOnlyDictionary<int, Player> Players => _players;
-        public void AddPlayer(Player player)
-        {
-            _players.Add(player.ID, player);
-        }
+        
+        public Dictionary<int, Player> Players => new Dictionary<int, Player>();
 
         public Dictionary<int, Player> NextPlayers { get; } = new Dictionary<int, Player>();
 
-        private Dictionary<int, Drawing> _drawings { get; } = new Dictionary<int, Drawing>();
-        public IReadOnlyDictionary<int, Drawing> Drawings => _drawings;
-        public void AddDrawing(Drawing drawing)
-        {
-            _drawings.Add(drawing.ID, drawing);
-            DrawingAdded?.Invoke(this, new GameEventArgs(this, drawing.Owner, drawing));
-        }
-        public void RemoveAllDrawings() { _drawings.Clear(); }
+        public Dictionary<int, Drawing> Drawings { get; } = new Dictionary<int, Drawing>();
 
         public int NumSimultaneousDrawings { get; }
         public int NumDrawSteps { get; set; }
@@ -60,6 +48,11 @@ namespace ConArtist.Model
                 if (value != null)
                     VoteStarted?.Invoke(this, new GameEventArgs(this, value));
             }
+        }
+
+        public void FireWaitingForOwners()
+        {
+            WaitingForPlayers?.Invoke(this, new GameEventArgs(this));
         }
 
         public void FireOwnerSelected(Player player)
@@ -82,6 +75,6 @@ namespace ConArtist.Model
             VoteFinished?.Invoke(this, new GameEventArgs(this, drawing));
         }
 
-        public event EventHandler<GameEventArgs> StatusChanged, OwnerSelected, DrawingAdded, PromptDraw, LineAdded, VoteStarted, VoteFinished;
+        public event EventHandler<GameEventArgs> StatusChanged, OwnerSelected, WaitingForPlayers, PromptDraw, LineAdded, VoteStarted, VoteFinished;
     }
 }

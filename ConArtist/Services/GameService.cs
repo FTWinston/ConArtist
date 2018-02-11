@@ -8,8 +8,8 @@ namespace ConArtist.Services
 {
     public class GameService
     {
-        private static Dictionary<int, Game> CurrentGames { get; } = new Dictionary<int, Game>();
-        private static Random random = new Random();
+        private Dictionary<int, Game> CurrentGames { get; } = new Dictionary<int, Game>();
+        private Random random = new Random();
 
         private Game GetGame(int gameID)
         {
@@ -56,39 +56,94 @@ namespace ConArtist.Services
         {
             var game = new Game(CurrentGames.Count, numSimultaneousDrawings, numDrawSteps, canChooseImposter);
             CurrentGames.Add(game.ID, game);
+
+            // TODO: if no one joins, remove it after a short period
+
             return game;
         }
 
-        public void RemoveGame(int gameID)
+        public IReadOnlyCollection<Player> ListPlayers(int gameID)
         {
-            CurrentGames.Remove(gameID);
+            Game game = GetGame(gameID);
+            return game.Players.Values;
         }
 
-        public int JoinGame(int gameID, string name, string color)
+        public int JoinGame(int gameID, string connectionID, string name, byte color)
         {
             Game game = GetGame(gameID);
             EnsureStatus(game, GameStatus.Open);
 
-            var player = new Player(game.Players.Count, name, color);
-            game.AddPlayer(player);
+            var player = new Player(game.Players.Count, connectionID, name, color);
+
+            if (!CanJoinGame(game, player))
+                return -1;
+
+            game.Players.Add(player.ID, player);
 
             return player.ID;
         }
 
-        public void StartGame(int gameID)
+        private bool CanJoinGame(Game game, Player player)
+        {
+            if (game.Players.ContainsKey(player.ID))
+                return false; // already in game
+
+            if (game.Players.Values.Any(p => p.Name.Equals(player.Name, StringComparison.InvariantCultureIgnoreCase)))
+                return false; // another player has that name
+
+            if (player.Color > 16 || game.Players.Values.Any(p => p.Color == player.Color))
+                return false; // another player has that color
+
+            return true;
+        }
+
+        public bool LeaveGame(int gameID, int playerID)
+        {
+            Game game = GetGame(gameID);
+
+            var player = game.Players[playerID];
+
+            if (game.Players.Count == 1)
+            {// last player leaving, discard the game
+                CurrentGames.Remove(game.ID);
+                return false;
+            }
+
+            // tweak game so it can keep running
+
+            if (player.IsBusy)
+                ; // TODO: something ... are they drawing or setting up?
+            //else if (player.IsVoting)
+                //;
+
+            // remove from nextPlayers (key and value)
+            Player nextPlayer;
+            if (game.NextPlayers.TryGetValue(playerID, out nextPlayer))
+            {
+                var prevPlayerID = game.NextPlayers.Single(kvp => kvp.Value == player).Key;
+                game.NextPlayers[prevPlayerID] = nextPlayer;
+            }
+
+            game.Players.Remove(playerID);
+            return true;
+        }
+
+        public void StartGame(int gameID, int playerID)
         {
             Game game = GetGame(gameID);
             EnsureStatus(game, GameStatus.Open);
+            GetPlayer(game, playerID);
 
             InitializeGame(game);
         }
 
-        public void RestartGame(int gameID)
+        public void RestartGame(int gameID, int playerID)
         {
             Game game = GetGame(gameID);
             EnsureStatus(game, GameStatus.Finished);
+            GetPlayer(game, playerID);
 
-            game.RemoveAllDrawings();
+            game.Drawings.Clear();
             InitializeGame(game);
         }
 
@@ -107,15 +162,17 @@ namespace ConArtist.Services
             for (int iDrawing = 0; iDrawing < numDrawings; iDrawing++)
             {
                 var player = SelectRandomPlayer(game, ownerPlayers);
-                player.IsSettingUpDrawing = true;
+                player.IsBusy = true;
                 game.FireOwnerSelected(player);
                 ownerPlayers.Add(player);
             }
+
+            game.FireWaitingForOwners();
         }
 
         private List<T> RandomizeOrder<T>(IEnumerable<T> values)
         {
-            var entries = values.ToList();
+            var entries = new List<T>(values);
 
             for (int i = entries.Count - 1; i > 0; i -= 1)
             {
@@ -134,7 +191,7 @@ namespace ConArtist.Services
             EnsureStatus(game, GameStatus.Describing);
             Player player = GetPlayer(game, playerID);
 
-            if (!player.IsSettingUpDrawing)
+            if (!player.IsBusy)
                 throw new Exception($"Player {playerID} cannot set up a drawing in game {gameID}");
 
             if (imposterPlayerID.HasValue != game.CanChooseImposter)
@@ -145,7 +202,7 @@ namespace ConArtist.Services
                     throw new Exception($"Player {playerID} cannot select an imposter player in game {gameID}");
             }
             
-            player.IsSettingUpDrawing = false;
+            player.IsBusy = false;
 
             Player imposter;
             if (imposterPlayerID.HasValue)
@@ -154,7 +211,7 @@ namespace ConArtist.Services
                 imposter = SelectRandomPlayer(game, player);
 
             var drawing = new Drawing(game.Drawings.Count, player, imposter, subject, clue);
-            game.AddDrawing(drawing);
+            game.Drawings.Add(drawing.ID, drawing);
 
             if (HaveAllDrawingsBeenAdded(game))
             {
@@ -178,18 +235,17 @@ namespace ConArtist.Services
             if (drawing.CurrentDrawer != player)
                 throw new Exception($"Player {playerID} is not currently drawing {drawingID} in game " + gameID);
 
+            drawing.CurrentDrawer.IsBusy = false;
             drawing.Lines.Add(new Line(player, points));
-            drawing.CurrentDrawer.IsDrawing = false;
-
             game.FireLineAdded(player, drawing);
 
-            if (HaveAllPlayersDrawn(game))
+            if (!AreAnyPlayersBusy(game))
                 AdvanceDrawingsToNextPlayers(game);
         }
 
-        private bool HaveAllPlayersDrawn(Game game)
+        private bool AreAnyPlayersBusy(Game game)
         {
-            return !game.Drawings.Values.Any(d => d.CurrentDrawer.IsDrawing);
+            return game.Drawings.Values.Any(d => d.CurrentDrawer.IsBusy);
         }
 
         private void SetupPlayerOrder(Game game)
@@ -202,9 +258,8 @@ namespace ConArtist.Services
             {
                 var player = players[iOrder - 1];
                 var nextPlayer = players[iOrder];
-
-                player.IsDrawing = false;
-                player.IsSettingUpDrawing = false;
+                
+                player.IsBusy = false;
                 game.NextPlayers.Add(player.ID, nextPlayer);
             }
 
@@ -224,7 +279,7 @@ namespace ConArtist.Services
                 }
                 else
                 {
-                    drawing.CurrentDrawer.IsDrawing = true;
+                    drawing.CurrentDrawer.IsBusy = true;
                     game.FirePromptDraw(drawing);
                 }
             }
@@ -248,13 +303,13 @@ namespace ConArtist.Services
             }
         }
 
-        public void Vote(int gameID, int votingPlayerID, int drawingID, int chosenPlayerID)
+        public void Vote(int gameID, int votingPlayerID, int drawingID, int suspectPlayerID)
         {
             Game game = GetGame(gameID);
             EnsureStatus(game, GameStatus.Voting);
             Drawing drawing = GetDrawing(game, drawingID);
             Player votingPlayer = GetPlayer(game, votingPlayerID);
-            Player chosenPlayer = GetPlayer(game, chosenPlayerID);
+            Player suspectPlayer = GetPlayer(game, suspectPlayerID);
 
             if (drawing != game.VoteDrawing)
                 throw new Exception($"Cannot vote on drawing {drawingID} as this is not the one currently being voted on in game {gameID}");
@@ -263,7 +318,11 @@ namespace ConArtist.Services
                 throw new Exception($"Player {votingPlayerID} has already voted for drawing {drawingID} in game {gameID}");
 
             drawing.VotedPlayers.Add(votingPlayerID);
-            drawing.Votes.Add(votingPlayerID, chosenPlayer);
+
+            if (drawing.Votes.ContainsKey(suspectPlayerID))
+                drawing.Votes[suspectPlayerID]++;
+            else
+                drawing.Votes[suspectPlayerID] = 1;
 
             if (HaveAllPlayersVoted(game))
             {
