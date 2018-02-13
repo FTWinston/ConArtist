@@ -10,7 +10,7 @@ namespace ConArtist.Hubs
 {
     public interface IGameHubCommands
     {
-        void ListPlayers(List<IPlayer> players);
+        void ListPlayers(IReadOnlyCollection<IPlayer> players);
         void StartGame();
         void PromptSetupDrawing();
         void WaitingForPlayers(int[] playerIDs);
@@ -60,12 +60,11 @@ namespace ConArtist.Hubs
             SendPlayerList(gameID);
         }
 
-        public async Task JoinGame(int gameID, string name, byte color)
+        public void JoinGame(string name, byte color)
         {
+            var gameID = GetIntFromMetadata(GameID).Value;
             int playerID = GameService.JoinGame(gameID, Context.ConnectionId, name, color);
             Context.Connection.Metadata[PlayerID] = playerID;
-            
-            await Groups.AddAsync(Context.ConnectionId, gameID.ToString());
             SendPlayerList(gameID);
         }
 

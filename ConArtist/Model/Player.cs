@@ -2,6 +2,7 @@
 {
     public interface IPlayer
     {
+        int ID { get; }
         string Name { get; }
         byte Color { get; }
     }
