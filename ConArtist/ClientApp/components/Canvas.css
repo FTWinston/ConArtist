@@ -1,0 +1,9 @@
+.canvas {
+    overflow: hidden;
+    position: relative;
+}
+
+.canvas__element {
+    position: absolute;
+    z-index: 1;
+}
