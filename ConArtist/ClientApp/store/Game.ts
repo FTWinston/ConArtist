@@ -44,7 +44,8 @@ export const actionCreators = {
 // ----------------
 // REDUCER - For a given state and action, returns the new state. To support time travel, this must not mutate the old state.
 
-export const reducer: Reducer<GameState> = (state: GameState, action: KnownAction) => {
+export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action) => {
+    let action = rawAction as KnownAction;
     switch (action.type) {
         case 'LIST_PLAYERS':
             return {
@@ -52,9 +53,10 @@ export const reducer: Reducer<GameState> = (state: GameState, action: KnownActio
                 allPlayers: action.players,
             };
         case 'WAITING_FOR':
+            let waitingAction = action as WaitingForAction;
             return {
                 ...state,
-                waitingFor: state.allPlayers.filter(p => action.playerIDs.find(id => id === p.ID) !== undefined),
+                waitingFor: state.allPlayers.filter(p => waitingAction.playerIDs.find(id => id === p.ID) !== undefined),
             };
         default:
             // The following line guarantees that every action in the KnownAction union has been covered by a case above

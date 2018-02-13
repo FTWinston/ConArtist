@@ -1,5 +1,4 @@
 import * as React from 'react';
-import * as Hammer from 'hammerjs';
 import './Canvas.css';
 
 export interface Player {

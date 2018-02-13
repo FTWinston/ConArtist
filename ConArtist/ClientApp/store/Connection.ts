@@ -33,7 +33,8 @@ interface CreateAction {
 }
 
 interface ConnectAction {
-    type: 'CONNECT_GAME', gameID: string
+    type: 'CONNECT_GAME',
+    gameID: string
 }
 
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
@@ -45,30 +46,41 @@ type KnownAction = CreateAction | ConnectAction;
 // They don't directly mutate state, but they can have external side-effects (such as loading data).
 
 export const actionCreators = {
-    create: () => <CreateAction>{ type: 'CREATE_GAME' },
-    connect: (id: string) => <ConnectAction>{ type: 'CONNECT_GAME', gameID: id },
+    create: (numSimultaneousDrawings: number, numDrawSteps: number, canChoose: boolean) => <CreateAction>{
+        type: 'CREATE_GAME',
+        numSimultaneousDrawings: numSimultaneousDrawings,
+        numDrawSteps: numDrawSteps,
+        canChoose: canChoose,
+    },
+    connect: (id: string) => <ConnectAction>{
+        type: 'CONNECT_GAME',
+        gameID: id,
+    },
 };
 
 // ----------------
 // REDUCER - For a given state and action, returns the new state. To support time travel, this must not mutate the old state.
 
-export const reducer: Reducer<ConnectionState> = (state: ConnectionState, action: KnownAction) => {
+export const reducer: Reducer<ConnectionState> = (state: ConnectionState, rawAction: Action) => {
+    let action = rawAction as KnownAction;
     switch (action.type) {
         case 'CREATE_GAME':
+            let createAction = action as CreateAction;
             connection.start()
                 .then(() => connection
                     .invoke('CreateGame'
-                        , action.numSimultaneousDrawings
-                        , action.numDrawSteps
-                        , action.canChoose)
+                        , createAction.numSimultaneousDrawings
+                        , createAction.numDrawSteps
+                        , createAction.canChoose)
                     .then(gameID => push(`/game/${gameID}/join`))
                 );
             break;
         case 'CONNECT_GAME':
+            let connectAction = action as ConnectAction;
             connection.start()
                 .then(() => connection
-                    .invoke('ConnectToGame', action.gameID)
-                    .then(() => push(`/game/${action.gameID}/join`))
+                    .invoke('ConnectToGame', connectAction.gameID)
+                    .then(() => push(`/game/${connectAction.gameID}/join`))
                 );
             break;
         default:
