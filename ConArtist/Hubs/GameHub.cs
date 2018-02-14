@@ -10,16 +10,16 @@ namespace ConArtist.Hubs
 {
     public interface IGameHubCommands
     {
-        void ListPlayers(IReadOnlyCollection<IPlayer> players);
-        void StartGame();
-        void PromptSetupDrawing();
-        void WaitingForPlayers(int[] playerIDs);
-        void PromptDraw(int drawingID);
-        void AddLine(int playerID, int drawingID, Point[] points);
-        void PromptVote(int drawingID);
-        void IndicateVoted(int playerID);
-        void ShowVoteResult(int drawingID, IReadOnlyCollection<int> playerIDs, IReadOnlyCollection<int> votes);
-        void ShowEndGame(IReadOnlyCollection<int> playerIDs, IReadOnlyCollection<int> scores);
+        Task ListPlayers(IReadOnlyCollection<IPlayer> players);
+        Task StartGame();
+        Task PromptSetupDrawing();
+        Task WaitingForPlayers(int[] playerIDs);
+        Task PromptDraw(int drawingID);
+        Task AddLine(int playerID, int drawingID, Point[] points);
+        Task PromptVote(int drawingID);
+        Task IndicateVoted(int playerID);
+        Task ShowVoteResult(int drawingID, IReadOnlyCollection<int> playerIDs, IReadOnlyCollection<int> votes);
+        Task ShowEndGame(IReadOnlyCollection<int> playerIDs, IReadOnlyCollection<int> scores);
     }
 
     public class GameHub : Hub<IGameHubCommands>
@@ -41,12 +41,12 @@ namespace ConArtist.Hubs
             string gameID = game.ID.ToString();
 
             game.StatusChanged += (o, e) => StatusChanged(gameID, e.Game.Status);
-            game.WaitingForPlayers += (o, e) => WaitingForPlayers(gameID, e.Game.Players.Values);
-            game.OwnerSelected += (o, e) => PromptSetupDrawing(gameID, e.Player);
-            game.PromptDraw += (o, e) => PromptDraw(gameID, e.Player, e.Drawing);
-            game.LineAdded += (o, e) => SendNewLine(gameID, e.Player, e.Drawing);
-            game.VoteStarted += (o, e) => PromptVote(gameID, e.Drawing);
-            game.VoteFinished += (o, e) => ShowVoteResult(gameID, e.Drawing);
+            game.WaitingForPlayers += async (o, e) => await SendWaitingForPlayers(gameID, e.Game.Players.Values);
+            game.OwnerSelected += async (o, e) => await PromptSetupDrawing(gameID, e.Player);
+            game.PromptDraw += async (o, e) => await PromptDraw(gameID, e.Player, e.Drawing);
+            game.LineAdded += async (o, e) => await SendNewLine(gameID, e.Player, e.Drawing);
+            game.VoteStarted += async (o, e) => await PromptVote(gameID, e.Drawing);
+            game.VoteFinished += async (o, e) => await ShowVoteResult(gameID, e.Drawing);
 
             await ConnectToGame(game.ID);
 
@@ -57,28 +57,28 @@ namespace ConArtist.Hubs
         {
             await Groups.AddAsync(Context.ConnectionId, gameID.ToString());
             Context.Connection.Metadata[GameID] = gameID;
-            SendPlayerList(gameID);
+            await SendPlayerList(gameID);
         }
 
-        public int JoinGame(string name, byte color)
+        public async Task<int> JoinGame(string name, byte color)
         {
             var gameID = GetIntFromMetadata(GameID).Value;
             int playerID = GameService.JoinGame(gameID, Context.ConnectionId, name, color);
             Context.Connection.Metadata[PlayerID] = playerID;
-            SendPlayerList(gameID);
+            await SendPlayerList(gameID);
             return playerID;
         }
 
-        public override Task OnDisconnectedAsync(Exception exception)
+        public override async Task OnDisconnectedAsync(Exception exception)
         {
             var gameID = GetIntFromMetadata(GameID);
             var playerID = GetIntFromMetadata(PlayerID);
 
             if (gameID.HasValue && playerID.HasValue
                 && GameService.LeaveGame(gameID.Value, playerID.Value))
-                SendPlayerList(gameID.Value);
+                await SendPlayerList(gameID.Value);
 
-            return base.OnDisconnectedAsync(exception);
+            await base.OnDisconnectedAsync(exception);
         }
         
         public void SetupDrawing(string subject, string clue, int? imposterPlayerID = null)
@@ -95,12 +95,12 @@ namespace ConArtist.Hubs
             GameService.AddLine(gameID, playerID, drawingID, points);
         }
 
-        public void Vote(int drawingID, int suspectPlayerID)
+        public async Task Vote(int drawingID, int suspectPlayerID)
         {
             var gameID = GetIntFromMetadata(GameID).Value;
             var playerID = GetIntFromMetadata(PlayerID).Value;
             GameService.Vote(gameID, playerID, drawingID, suspectPlayerID);
-            Clients.Group(gameID.ToString()).IndicateVoted(playerID);
+            await Clients.Group(gameID.ToString()).IndicateVoted(playerID);
         }
 
 
@@ -113,10 +113,10 @@ namespace ConArtist.Hubs
             return (int)objVal;
         }
 
-        private void SendPlayerList(int gameID)
+        private async Task SendPlayerList(int gameID)
         {
             var players = (List<IPlayer>)GameService.ListPlayers(gameID);
-            Clients.Group(gameID.ToString()).ListPlayers(players);
+            await Clients.Group(gameID.ToString()).ListPlayers(players);
         }
 
         private void StatusChanged(string gameID, GameStatus status)
@@ -132,7 +132,7 @@ namespace ConArtist.Hubs
             }
         }
 
-        private void WaitingForPlayers(string gameID, IReadOnlyCollection<Player> players)
+        private async Task SendWaitingForPlayers(string gameID, IReadOnlyCollection<Player> players)
         {
             var playerIDs = players
                 .Where(p => p.IsBusy)
@@ -140,34 +140,34 @@ namespace ConArtist.Hubs
                 .ToArray();
 
             var group = Clients.Group(gameID);
-            group.WaitingForPlayers(playerIDs);
+            await group.WaitingForPlayers(playerIDs);
         }
 
-        private void PromptSetupDrawing(string gameID, Player player)
+        private async Task PromptSetupDrawing(string gameID, Player player)
         {
-            Clients.Client(player.ConnectionID).PromptSetupDrawing();
+            await Clients.Client(player.ConnectionID).PromptSetupDrawing();
         }
 
-        private void PromptDraw(string gameID, Player player, Drawing drawing)
+        private async Task PromptDraw(string gameID, Player player, Drawing drawing)
         {
-            Clients.Client(player.ConnectionID).PromptDraw(drawing.ID);
+            await Clients.Client(player.ConnectionID).PromptDraw(drawing.ID);
         }
 
-        private void SendNewLine(string gameID, Player player, Drawing drawing)
+        private async Task SendNewLine(string gameID, Player player, Drawing drawing)
         {
             var group = Clients.Group(gameID);
             var points = drawing.Lines.Last().Points;
-            group.AddLine(player.ID, drawing.ID, points);
+            await group.AddLine(player.ID, drawing.ID, points);
         }
 
-        private void PromptVote(string gameID, Drawing drawing)
+        private async Task PromptVote(string gameID, Drawing drawing)
         {
-            Clients.Group(gameID.ToString()).PromptVote(drawing.ID);
+            await Clients.Group(gameID.ToString()).PromptVote(drawing.ID);
         }
 
-        private void ShowVoteResult(string gameID, Drawing drawing)
+        private async Task ShowVoteResult(string gameID, Drawing drawing)
         {
-            Clients.Group(gameID.ToString()).ShowVoteResult(drawing.ID, drawing.Votes.Keys, drawing.Votes.Values);
+            await Clients.Group(gameID.ToString()).ShowVoteResult(drawing.ID, drawing.Votes.Keys, drawing.Votes.Values);
         }
     }
 }
