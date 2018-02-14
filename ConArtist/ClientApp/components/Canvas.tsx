@@ -1,23 +1,11 @@
 import * as React from 'react';
+import { Point, Line, PlayerInfo } from '../store/Game';
 import './Canvas.css';
 
-export interface Player {
-    color: string;
-}
-
-export interface Point {
-    X: number;
-    Y: number;
-}
-
-export interface Line {
-    points: Point[];
-    player: Player;
-}
 
 interface CanvasProps {
     lines: Line[];
-    drawingPlayer?: Player;
+    drawingPlayer?: PlayerInfo;
     lineDrawn?: (points: Point[]) => void;
 }
 
@@ -134,8 +122,20 @@ export class Canvas extends React.PureComponent<CanvasProps, CanvasState> {
         }
     }
 
+    private interpretColor(color: number) {
+        switch (color) {
+            case 0: return '#f00';
+            case 1: return '#0cf';
+            case 2: return '#0c0';
+            case 3: return '#cc0';
+            case 4: return '#c0c';
+            // TODO: more colors here
+            default: return '#999';
+        }
+    }
+
     private drawLine(line: Line, ctx: CanvasRenderingContext2D, width: number, height: number) {
-        ctx.strokeStyle = line.player.color;
+        ctx.strokeStyle = this.interpretColor(line.player.Color);
         ctx.beginPath();
 
         let first = true;

@@ -1,9 +1,7 @@
-import * as Connection from './Connection';
 import * as Game from './Game';
 
 // The top-level state object
 export interface ApplicationState {
-    connection: Connection.ConnectionState;
     game: Game.GameState;
 }
 
@@ -11,7 +9,6 @@ export interface ApplicationState {
 // the reducer with the matching name. It's important that the names match exactly, and that the reducer
 // acts on the corresponding ApplicationState property type.
 export const reducers = {
-    connecton: Connection.reducer,
     game: Game.reducer,
 };
 

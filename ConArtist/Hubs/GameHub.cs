@@ -60,12 +60,13 @@ namespace ConArtist.Hubs
             SendPlayerList(gameID);
         }
 
-        public void JoinGame(string name, byte color)
+        public int JoinGame(string name, byte color)
         {
             var gameID = GetIntFromMetadata(GameID).Value;
             int playerID = GameService.JoinGame(gameID, Context.ConnectionId, name, color);
             Context.Connection.Metadata[PlayerID] = playerID;
             SendPlayerList(gameID);
+            return playerID;
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
