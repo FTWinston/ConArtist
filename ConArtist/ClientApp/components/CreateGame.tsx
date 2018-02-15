@@ -1,6 +1,8 @@
 import * as React from 'react';
-import { RouteComponentProps } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { connect } from 'react-redux';
+import { RouteComponentProps, Link } from 'react-router-dom';
+import { ApplicationState } from '../store';
+import * as GameStore from '../store/Game';
 
 interface CreateState {
     numDrawings: number;
@@ -8,8 +10,12 @@ interface CreateState {
     canChoose: boolean;
 }
 
-export default class CreateGame extends React.Component<RouteComponentProps<{}>, CreateState> {
-    constructor(props: RouteComponentProps<{}>) {
+type CreateProps =
+    typeof GameStore.actionCreators
+    & RouteComponentProps<{}>;
+
+class CreateGame extends React.Component<CreateProps, CreateState> {
+    constructor(props: CreateProps) {
         super(props);
 
         this.state = {
@@ -61,6 +67,11 @@ export default class CreateGame extends React.Component<RouteComponentProps<{}>,
     }
 
     private createGame() {
-        // TODO: send signalR message, get game ID, then navigate to /game/id/join
+        this.props.create(this.state.numDrawings, this.state.numLines, this.state.canChoose);
     }
 }
+
+export default connect(
+    (state: ApplicationState) => { return {} as CreateProps },
+    GameStore.actionCreators
+)(CreateGame) as typeof CreateGame;

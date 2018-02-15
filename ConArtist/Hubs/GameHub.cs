@@ -116,7 +116,7 @@ namespace ConArtist.Hubs
 
         private async Task SendPlayerList(int gameID)
         {
-            var players = (List<IPlayer>)GameService.ListPlayers(gameID);
+            var players = GameService.ListPlayers(gameID);
             await Clients.Group(gameID.ToString()).ListPlayers(players);
         }
 

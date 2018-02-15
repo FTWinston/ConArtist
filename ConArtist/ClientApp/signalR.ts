@@ -18,13 +18,8 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
                 break;
             }
             let createAction = action as Action as CreateAction;
-            connection.start()
-                .then(() => connection.invoke('CreateGame'
-                            , createAction.numSimultaneousDrawings
-                            , createAction.numDrawSteps
-                            , createAction.canChoose)
-                    .then(gameID => push(`/game/${gameID}/join`))
-                );
+            connection.invoke('CreateGame' , createAction.numSimultaneousDrawings , createAction.numDrawSteps, createAction.canChoose)
+                .then(gameID => store.dispatch(push(`/game/${gameID}/join`)));
             break;
 
         case 'CLIENT_CONNECT_GAME':
@@ -33,11 +28,8 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
                 break;
             }
             let connectAction = action as Action as ConnectAction;
-            connection.start()
-                .then(() => connection
-                    .invoke('ConnectToGame', connectAction.gameID)
-                    .then(() => push(`/game/${connectAction.gameID}/join`))
-                );
+            connection.invoke('ConnectToGame', connectAction.gameID)
+                .then(() => store.dispatch(push(`/game/${connectAction.gameID}/join`)));
             break;
 
         case 'CLIENT_JOIN_GAME':
