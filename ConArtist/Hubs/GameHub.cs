@@ -53,11 +53,15 @@ namespace ConArtist.Hubs
             return gameID;
         }
 
-        public async Task ConnectToGame(int gameID)
+        public async Task<bool> ConnectToGame(int gameID)
         {
+            if (GameService.GetGame(gameID).Status != GameStatus.Open)
+                return false;
+
             await Groups.AddAsync(Context.ConnectionId, gameID.ToString());
             Context.Connection.Metadata[GameID] = gameID;
             await SendPlayerList(gameID);
+            return true;
         }
 
         public async Task<int> JoinGame(string name, byte color)

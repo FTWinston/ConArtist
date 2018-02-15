@@ -1,13 +1,20 @@
 import * as React from 'react';
+import { withRouter } from 'react-router';
+import { connect } from 'react-redux';
 import { RouteComponentProps } from 'react-router-dom';
-import { Link } from 'react-router-dom';
+import { ApplicationState } from '../store';
+import * as GameStore from '../store/Game';
 
 interface PickState {
     gameID: string;
 }
 
-export default class PickGame extends React.Component<RouteComponentProps<{}>, PickState> {
-    constructor(props: RouteComponentProps<{}>) {
+type PickProps =
+    typeof GameStore.actionCreators
+    & RouteComponentProps<{}>;
+
+class PickGame extends React.Component<PickProps, PickState> {
+    constructor(props: PickProps) {
         super(props);
 
         this.state = {
@@ -26,11 +33,17 @@ export default class PickGame extends React.Component<RouteComponentProps<{}>, P
                 />
             </div>
 
-            <input type="submit" value="Join game" disabled={this.state.gameID === ''} />
+            <input type="submit" value="Join game" disabled={this.state.gameID.trim() === ''} />
         </form>;
     }
 
     private joinGame() {
-        // TODO: send signalR message, navigate to /game/{this.state.gameID}/join
+        let gameID = this.state.gameID.trim();
+        this.props.history.push(`/game/${gameID}/join`);
     }
 }
+
+export default connect(
+    (state: ApplicationState) => { return {} as PickProps },
+    GameStore.actionCreators
+)(PickGame) as typeof PickGame;

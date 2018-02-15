@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { RouteComponentProps, Link } from 'react-router-dom';
+import { RouteComponentProps } from 'react-router-dom';
 import { ApplicationState } from '../store';
 import * as GameStore from '../store/Game';
 
@@ -67,7 +67,7 @@ class CreateGame extends React.Component<CreateProps, CreateState> {
     }
 
     private createGame() {
-        this.props.create(this.state.numDrawings, this.state.numLines, this.state.canChoose);
+        this.props.createGame(this.state.numDrawings, this.state.numLines, this.state.canChoose);
     }
 }
 

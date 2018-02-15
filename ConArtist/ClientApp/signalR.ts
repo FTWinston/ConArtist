@@ -29,12 +29,14 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
             }
             let connectAction = action as Action as ConnectAction;
             connection.invoke('ConnectToGame', connectAction.gameID)
-                .then(() => store.dispatch(push(`/game/${connectAction.gameID}/join`)));
+                .then(success => { if (!success) { store.dispatch(push('/')); } });
             break;
 
         case 'CLIENT_JOIN_GAME':
             let joinAction = action as Action as JoinGameAction;
-            connection.invoke('JoinGame', joinAction.name, joinAction.color).then(playerID => store.dispatch(actionCreators.setLocalPlayer(playerID)));
+            connection.invoke('JoinGame', joinAction.name, joinAction.color)
+                // TODO: navigate to /game/gameID on success ... need to get at gameID here!
+                .then(playerID => store.dispatch(actionCreators.setLocalPlayer(playerID)));
 
         case 'CLIENT_SETUP_DRAWING':
             let setupAction = action as Action as SetupDrawingAction

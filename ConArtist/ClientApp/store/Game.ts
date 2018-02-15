@@ -155,7 +155,7 @@ export type KnownAction = CreateAction | ConnectAction | JoinGameAction | SetLoc
 // They don't directly mutate state, but they can have external side-effects (such as loading data).
 
 export const actionCreators = {
-    create: (numSimultaneousDrawings: number, numDrawSteps: number, canChoose: boolean) => <CreateAction>{
+    createGame: (numSimultaneousDrawings: number, numDrawSteps: number, canChoose: boolean) => <CreateAction>{
         type: 'CLIENT_CREATE_GAME',
         numSimultaneousDrawings: numSimultaneousDrawings,
         numDrawSteps: numDrawSteps,

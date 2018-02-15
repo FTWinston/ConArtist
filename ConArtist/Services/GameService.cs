@@ -11,7 +11,7 @@ namespace ConArtist.Services
         private Dictionary<int, Game> CurrentGames { get; } = new Dictionary<int, Game>();
         private Random random = new Random();
 
-        private Game GetGame(int gameID)
+        public Game GetGame(int gameID)
         {
             if (CurrentGames.TryGetValue(gameID, out Game game))
                 return game;
