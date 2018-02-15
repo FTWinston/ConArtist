@@ -100,6 +100,7 @@ namespace ConArtist.Hubs
             var gameID = GetIntFromMetadata(GameID).Value;
             var playerID = GetIntFromMetadata(PlayerID).Value;
             GameService.Vote(gameID, playerID, drawingID, suspectPlayerID);
+            // TODO: can't this just get at the "busy players" list rather than have a separate message?
             await Clients.Group(gameID.ToString()).IndicateVoted(playerID);
         }
 
