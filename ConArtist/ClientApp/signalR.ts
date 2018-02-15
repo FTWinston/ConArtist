@@ -5,7 +5,7 @@ import { push } from 'react-router-redux';
 import { actionCreators, CreateAction, ConnectAction, JoinGameAction, SetupDrawingAction, AddLineAction, VoteAction, PlayerInfo, Point, ViewMode } from './store/Game';
 
 let connection = new signalR.HubConnection(
-    new signalR.HttpConnection(`http://${document.location.host}/live`, {
+    new signalR.HttpConnection(typeof (document) === 'undefined' ? 'http://conartist.ftwinston.com/live' : `http://${document.location.host}/live`, {
         transport: signalR.TransportType.WebSockets
     })
 );
