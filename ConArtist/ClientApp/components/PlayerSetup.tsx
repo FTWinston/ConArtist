@@ -42,10 +42,8 @@ class PlayerSetup extends React.Component<PlayerSetupProps, PlayerSetupState> {
                     onChange={e => this.setState({ name: e.target.value })}
                 />
             </div>
-            <div>
-                <p>Drawing color</p>
-                <p>...</p>
-            </div>
+
+            {this.renderColorSelection()}
 
             <input
                 type="submit"
@@ -54,6 +52,43 @@ class PlayerSetup extends React.Component<PlayerSetupProps, PlayerSetupState> {
             />
             <input type="button" value="Spectate" onClick={() => this.spectate()} />
         </form>;
+    }
+
+    private renderColorSelection() {
+        let disabledColors = this.props.allPlayers
+            .filter(p => p !== this.props.localPlayer)
+            .map(p => p.color);
+
+        return <div>
+            <p>Drawing color</p>
+            {this.renderColorRadio(1, 'Red', disabledColors)}
+            {this.renderColorRadio(2, 'Orange', disabledColors)}
+            {this.renderColorRadio(3, 'Yellow', disabledColors)}
+            {this.renderColorRadio(4, 'Light Green', disabledColors)}
+            {this.renderColorRadio(5, 'Dark Green', disabledColors)}
+            {this.renderColorRadio(6, 'Light Blue', disabledColors)}
+            {this.renderColorRadio(7, 'Deep Blue', disabledColors)}
+            {this.renderColorRadio(8, 'Violet', disabledColors)}
+        </div>
+    }
+
+    private renderColorRadio(value: number, name: string, disabledValues: number[]) {
+        let disabled = disabledValues.indexOf(value) !== -1;
+        let checked = this.state.color === value && !disabled;
+        let classes = 'btn btn-primary';
+        if (disabled) {
+            classes += ' btn-disabled';
+        }
+        if (checked) {
+            classes += ' active';
+        }
+
+        return (
+        <label className={classes}>
+            <input type="radio" name="color" value={value} checked={checked} disabled={disabled} onChange={e => this.setState({ color: value })} />
+            {name}
+        </label>
+        );
     }
 
     private joinGame() {

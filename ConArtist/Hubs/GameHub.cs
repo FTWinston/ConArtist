@@ -52,10 +52,10 @@ namespace ConArtist.Hubs
 
             return gameID;
         }
-
+        
         public async Task<bool> ConnectToGame(int gameID)
         {
-            if (GameService.GetGame(gameID).Status != GameStatus.Open)
+            if (!GameService.GameAllowsNewPlayers(gameID))
                 return false;
 
             await Groups.AddAsync(Context.ConnectionId, gameID.ToString());
@@ -67,10 +67,14 @@ namespace ConArtist.Hubs
         public async Task<int> JoinGame(string name, byte color)
         {
             var gameID = GetIntFromMetadata(GameID).Value;
-            int playerID = GameService.JoinGame(gameID, Context.ConnectionId, name, color);
+            int? playerID = GameService.JoinGame(gameID, Context.ConnectionId, name, color);
+
+            if (!playerID.HasValue)
+                return -1;
+
             Context.Connection.Metadata[PlayerID] = playerID;
             await SendPlayerList(gameID);
-            return playerID;
+            return playerID.Value;
         }
 
         public override async Task OnDisconnectedAsync(Exception exception)
@@ -113,7 +117,7 @@ namespace ConArtist.Hubs
         private int? GetIntFromMetadata(string key)
         {
             var objVal = Context.Connection.Metadata[key];
-            if (objVal == null || objVal is int)
+            if (objVal == null || !(objVal is int))
                 return null;
             return (int)objVal;
         }

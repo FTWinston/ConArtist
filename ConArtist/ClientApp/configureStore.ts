@@ -1,7 +1,7 @@
 import { createStore, applyMiddleware, compose, combineReducers, GenericStoreEnhancer, Store, StoreEnhancerStoreCreator, ReducersMapObject } from 'redux';
 import thunk from 'redux-thunk';
 import { routerReducer, routerMiddleware } from 'react-router-redux';
-import { signalrMiddleware, signalrRegisterCommands } from './signalr';
+import { signalrMiddleware } from './signalr';
 import { loggingMiddleware } from './Logging';
 import * as StoreModule from './store';
 import { ApplicationState, reducers } from './store';
@@ -20,7 +20,6 @@ export default function configureStore(history: History, initialState?: Applicat
     // Combine all reducers and instantiate the app-wide store instance
     const allReducers = buildRootReducer(reducers);
     const store = createStoreWithMiddleware(allReducers, initialState) as Store<ApplicationState>;
-    signalrRegisterCommands(store, () => { });
 
     // Enable Webpack hot module replacement for reducers
     if (module.hot) {

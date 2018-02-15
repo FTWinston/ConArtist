@@ -25,7 +25,7 @@ class PickGame extends React.Component<PickProps, PickState> {
         return <form onSubmit={e => { this.joinGame(); e.preventDefault(); }}>
             <h1>Join a game</h1>
             <div>
-                <p>Number of drawings</p>
+                <p>Game identifier</p>
                 <input
                     type="text"
                     value={this.state.gameID}

@@ -9,11 +9,11 @@
 
     public class Player : IPlayer
     {
-        public Player(int id, string name, string connectionID, byte color)
+        public Player(int id, string connectionID, string name, byte color)
         {
             ID = id;
-            Name = name;
             ConnectionID = connectionID;
+            Name = name;
             Color = color;
         }
 

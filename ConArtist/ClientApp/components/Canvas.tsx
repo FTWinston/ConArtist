@@ -135,13 +135,13 @@ export class Canvas extends React.PureComponent<CanvasProps, CanvasState> {
     }
 
     private drawLine(line: Line, ctx: CanvasRenderingContext2D, width: number, height: number) {
-        ctx.strokeStyle = this.interpretColor(line.player.Color);
+        ctx.strokeStyle = this.interpretColor(line.player.color);
         ctx.beginPath();
 
         let first = true;
         for (let point of line.points) {
-            let x = point.X * width;
-            let y = point.Y * height;
+            let x = point.x * width;
+            let y = point.y * height;
 
             if (first) {
                 first = false;
@@ -159,8 +159,8 @@ export class Canvas extends React.PureComponent<CanvasProps, CanvasState> {
         let target = e.target as HTMLDivElement;
 
         return {
-            X: (e.pageX - target.offsetLeft) / target.offsetWidth,
-            Y: (e.pageY - target.offsetTop) / target.offsetHeight,
+            x: (e.pageX - target.offsetLeft) / target.offsetWidth,
+            y: (e.pageY - target.offsetTop) / target.offsetHeight,
         }
     }
 
@@ -229,8 +229,8 @@ export class Canvas extends React.PureComponent<CanvasProps, CanvasState> {
     }
 
     private distSq(p1: Point, p2: Point) {
-        let dx = p1.X - p2.X;
-        let dy = p1.Y - p2.Y;
+        let dx = p1.x - p2.x;
+        let dy = p1.y - p2.y;
 
         return dx * dx + dy * dy;
     }

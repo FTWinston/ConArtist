@@ -11,7 +11,7 @@ namespace ConArtist.Services
         private Dictionary<int, Game> CurrentGames { get; } = new Dictionary<int, Game>();
         private Random random = new Random();
 
-        public Game GetGame(int gameID)
+        private Game GetGame(int gameID)
         {
             if (CurrentGames.TryGetValue(gameID, out Game game))
                 return game;
@@ -68,23 +68,35 @@ namespace ConArtist.Services
             return game.Players.Values;
         }
 
-        public int JoinGame(int gameID, string connectionID, string name, byte color)
+        public int? JoinGame(int gameID, string connectionID, string name, byte color)
         {
             Game game = GetGame(gameID);
-            EnsureStatus(game, GameStatus.Open);
-
             var player = new Player(game.Players.Count, connectionID, name, color);
 
             if (!CanJoinGame(game, player))
-                return -1;
+                return null;
 
             game.Players.Add(player.ID, player);
 
             return player.ID;
         }
 
+        public bool GameAllowsNewPlayers(int gameID)
+        {
+            if (!CurrentGames.TryGetValue(gameID, out Game game))
+                return false;
+
+            if (game.Status != GameStatus.Open)
+                return false;
+
+            return true;
+        }
+
         private bool CanJoinGame(Game game, Player player)
         {
+            if (game.Status != GameStatus.Open)
+                return false;
+
             if (game.Players.ContainsKey(player.ID))
                 return false; // already in game
 

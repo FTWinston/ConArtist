@@ -1,14 +1,10 @@
 import * as signalR from '@aspnet/signalr-client';
 import { ApplicationState } from './store';
 import { Action, Middleware, Store } from 'redux';
-import { push } from 'react-router-redux';
+import { goBack, push } from 'react-router-redux';
 import { actionCreators, CreateAction, ConnectAction, JoinGameAction, SetupDrawingAction, AddLineAction, VoteAction, PlayerInfo, Point, ViewMode } from './store/Game';
 
-let connection = new signalR.HubConnection(
-    new signalR.HttpConnection(typeof (document) === 'undefined' ? 'http://conartist.ftwinston.com/live' : `http://${document.location.host}/live`, {
-        transport: signalR.TransportType.WebSockets
-    })
-);
+let connection: signalR.HubConnection;
 
 export const signalrMiddleware: Middleware = store => next => async <A extends Action>(action: A) => {
     switch (action.type) {
@@ -18,28 +14,48 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
                 break;
             }
             let createAction = action as Action as CreateAction;
-            connection.invoke('CreateGame' , createAction.numSimultaneousDrawings , createAction.numDrawSteps, createAction.canChoose)
-                .then(gameID => store.dispatch(push(`/game/${gameID}/join`)));
+            setupConnection(store)
+                .then(() => connection.invoke('CreateGame' , createAction.numSimultaneousDrawings , createAction.numDrawSteps, createAction.canChoose))
+                .then((gameID: string) => store.dispatch(push(`/game/${gameID}/join`)));
             break;
 
         case 'CLIENT_CONNECT_GAME':
             if ((store.getState() as any as ApplicationState).game.viewMode !== ViewMode.NotConnected) {
                 console.error('Cannot connect to a game when already connected to another game');
+                store.dispatch(actionCreators.disconnect());
                 break;
             }
             let connectAction = action as Action as ConnectAction;
-            connection.invoke('ConnectToGame', connectAction.gameID)
-                .then(success => { if (!success) { store.dispatch(push('/')); } });
+            setupConnection(store)
+                .then(() => connection.invoke('ConnectToGame', connectAction.gameID))
+                .then((success: boolean) => {
+                    if (!success) {
+                        store.dispatch(actionCreators.disconnect());
+                        store.dispatch(push('/'));
+                    }
+                });
+            break;
+
+        case 'CLIENT_DISCONNECT_GAME':
+            connection.stop();
             break;
 
         case 'CLIENT_JOIN_GAME':
             let joinAction = action as Action as JoinGameAction;
             connection.invoke('JoinGame', joinAction.name, joinAction.color)
-                // TODO: navigate to /game/gameID on success ... need to get at gameID here!
-                .then(playerID => store.dispatch(actionCreators.setLocalPlayer(playerID)));
+            .then(playerID => {
+                if (playerID === -1) {
+                    store.dispatch(push('/'));
+                    store.dispatch(goBack());
+                }
+                else {
+                    store.dispatch(actionCreators.setLocalPlayer(playerID))
+                }
+            });
+            break;
 
         case 'CLIENT_SETUP_DRAWING':
-            let setupAction = action as Action as SetupDrawingAction
+            let setupAction = action as Action as SetupDrawingAction;
             connection.invoke('SetupDrawing', setupAction.subject, setupAction.clue, setupAction.imposterPlayerID);
             break;
 
@@ -57,7 +73,15 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
     return next(action);
 };
 
-export function signalrRegisterCommands(store: Store<ApplicationState>, callback: Function) {
+export async function setupConnection(store: any) {
+    let url = typeof (document) === 'undefined' ? 'http://conartist.ftwinston.com/live' : `http://${document.location.host}/live`;
+
+    connection = new signalR.HubConnection(
+        new signalR.HttpConnection(url, {
+            transport: signalR.TransportType.WebSockets
+        })
+    );
+
     connection.on('ListPlayers', (players: PlayerInfo[]) => store.dispatch(actionCreators.listPlayers(players)));
 
     connection.on('WaitingForPlayers', (ids: number[]) => store.dispatch(actionCreators.waitingFor(ids)));
@@ -78,5 +102,5 @@ export function signalrRegisterCommands(store: Store<ApplicationState>, callback
 
     connection.on('ShowEndGame', (playerIDs: number[], scores: number[]) => store.dispatch(actionCreators.showEndGame(playerIDs, scores)));
 
-    connection.start().then(callback());
+    await connection.start();
 }

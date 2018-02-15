@@ -10,6 +10,6 @@ export const routes = <div className="fullScreen">
     <Route exact path='/' component={ Home } />
     <Route path='/create' component={CreateGame} />
     <Route path='/join' component={PickGame} />
-    <Route path='/game/:gameID' component={Game} />
+    <Route path='/game/:gameID' component={Game} exact />
     <Route path='/game/:gameID/join' component={PlayerSetup} />
 </div>;

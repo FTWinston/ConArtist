@@ -16,7 +16,7 @@ namespace ConArtist.Model
 
         public int ID { get; }
 
-        private GameStatus _status;
+        private GameStatus _status = GameStatus.Open;
         public GameStatus Status
         {
             get { return _status; }
@@ -27,7 +27,7 @@ namespace ConArtist.Model
             }
         }
         
-        public Dictionary<int, Player> Players => new Dictionary<int, Player>();
+        public Dictionary<int, Player> Players { get; } = new Dictionary<int, Player>();
 
         public Dictionary<int, Player> NextPlayers { get; } = new Dictionary<int, Player>();
 

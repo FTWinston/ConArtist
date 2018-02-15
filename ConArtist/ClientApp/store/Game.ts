@@ -14,8 +14,8 @@ export enum ViewMode {
 }
 
 export interface Point {
-    X: number;
-    Y: number;
+    x: number;
+    y: number;
 }
 
 export interface Line {
@@ -24,13 +24,13 @@ export interface Line {
 }
 
 export interface PlayerInfo {
-    ID: number;
-    Name: string;
-    Color: number;
+    id: number;
+    name: string;
+    color: number;
 }
 
 export interface Drawing {
-    ID: number;
+    id: number;
     commissioner: PlayerInfo;
     lines: Line[];
     clue: string;
@@ -60,6 +60,10 @@ export interface CreateAction {
 export interface ConnectAction {
     type: 'CLIENT_CONNECT_GAME';
     gameID: string;
+}
+
+export interface DisconnectAction {
+    type: 'CLIENT_DISCONNECT_GAME';
 }
 
 export interface JoinGameAction {
@@ -146,9 +150,10 @@ interface ShowEndGameAction {
 
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
-export type KnownAction = CreateAction | ConnectAction | JoinGameAction | SetLocalPlayerAction | UpdatePlayerListAction
-    | UpdateBusyPlayersAction | SetupDrawingAction | AddLineAction | DrawLineAction | VoteAction | StartGameAction
-    | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction | IndicateVotedAction | ShowVoteResultAction | ShowEndGameAction;
+export type KnownAction = CreateAction | ConnectAction | DisconnectAction | JoinGameAction | SetLocalPlayerAction
+    | UpdatePlayerListAction | UpdateBusyPlayersAction | SetupDrawingAction | AddLineAction | DrawLineAction | VoteAction
+    | StartGameAction | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction | IndicateVotedAction
+    | ShowVoteResultAction | ShowEndGameAction;
 
 // ----------------
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
@@ -164,6 +169,9 @@ export const actionCreators = {
     connect: (id: string) => <ConnectAction>{
         type: 'CLIENT_CONNECT_GAME',
         gameID: id,
+    },
+    disconnect: () => <DisconnectAction>{
+        type: 'CLIENT_DISCONNECT_GAME',
     },
     joinGame: (name: string, color: number) => <JoinGameAction>{
         type: 'CLIENT_JOIN_GAME',
@@ -237,9 +245,16 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
                 viewMode: ViewMode.Idle,
             };
 
+        case 'CLIENT_DISCONNECT_GAME':
+            return {
+                ...state,
+                viewMode: ViewMode.NotConnected,
+            };
+
         case 'SERVER_SET_LOCAL_PLAYER':
             let setAction = action as SetLocalPlayerAction;
-            let matchingPlayers = state.allPlayers.filter(f => f.ID === setAction.playerID);
+            let matchingPlayers = state.allPlayers.filter(f => f.id === setAction.playerID);
+
             if (matchingPlayers.length !== 1) {
                 console.error(matchingPlayers.length == 0
                     ? `Cannot set local player: no player found with ID ${action.playerID}`
@@ -263,7 +278,7 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
             let waitingAction = action as UpdateBusyPlayersAction;
             return {
                 ...state,
-                waitingFor: state.allPlayers.filter(p => waitingAction.playerIDs.find(id => id === p.ID) !== undefined),
+                waitingFor: state.allPlayers.filter(p => waitingAction.playerIDs.find(id => id === p.id) !== undefined),
             };
 
         case 'SERVER_SHOW_DRAWING_SETUP':
@@ -277,15 +292,15 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
             return {
                 ...state,
                 viewMode: ViewMode.DrawLine,
-                expandDrawing: state.drawings.filter(d => d.ID === drawAction.drawingID)[0],
+                expandDrawing: state.drawings.filter(d => d.id === drawAction.drawingID)[0],
             };
 
         case 'SERVER_ADD_LINE':
             let addAction = action as AddLineAction;
             let drawings = state.drawings.slice();
-            let drawing = state.drawings.filter(d => d.ID == addAction.drawingID)[0];
+            let drawing = state.drawings.filter(d => d.id == addAction.drawingID)[0];
             drawing = {
-                ID: drawing.ID,
+                id: drawing.id,
                 commissioner: drawing.commissioner,
                 clue: drawing.clue,
                 lines: drawing.lines.slice()
@@ -301,14 +316,14 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
             return {
                 ...state,
                 viewMode: ViewMode.Vote,
-                expandDrawing: state.drawings.filter(d => d.ID === showAction.drawingID)[0],
+                expandDrawing: state.drawings.filter(d => d.id === showAction.drawingID)[0],
             };
 
         case 'SERVER_INDICATE_VOTED':
             let votedAction = action as IndicateVotedAction;
             return {
                 ...state,
-                waitingFor: state.waitingFor.filter(p => p.ID !== votedAction.playerID),
+                waitingFor: state.waitingFor.filter(p => p.id !== votedAction.playerID),
             };
 
         case 'SERVER_SHOW_VOTE_RESULT':
@@ -317,7 +332,7 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
             return {
                 ...state,
                 viewMode: ViewMode.VoteResults,
-                expandDrawing: state.drawings.filter(d => d.ID === resultAction.drawingID)[0],
+                expandDrawing: state.drawings.filter(d => d.id === resultAction.drawingID)[0],
             };
 
         case 'SERVER_SHOW_END_GAME':
