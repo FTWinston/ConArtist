@@ -1,0 +1,9 @@
+.game {
+    display: flex;
+    flex-direction: column;
+}
+
+.game__drawing {
+    display: flex;
+    flex-direction: column;
+}

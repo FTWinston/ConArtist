@@ -1,0 +1,25 @@
+.playerList {
+    display: flex;
+    flex-direction: column;
+    color: #000;
+}
+
+.playerListItem {
+    display: flex;
+    flex-direction: row;
+    height: 1.5em;
+    align-items: stretch;
+}
+
+.playerListItem__color {
+    width: 1.5em;
+    border-radius: 0.2em;
+}
+
+.playerListItem--local {
+    text-decoration: underline;
+}
+
+.playerListItem--busy {
+    color: #666;
+}

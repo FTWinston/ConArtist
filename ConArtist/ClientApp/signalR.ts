@@ -46,10 +46,10 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
             .then(playerID => {
                 if (playerID === -1) {
                     store.dispatch(push('/'));
-                    store.dispatch(goBack());
                 }
                 else {
-                    store.dispatch(actionCreators.setLocalPlayer(playerID))
+                    store.dispatch(actionCreators.setLocalPlayer(playerID));
+                    store.dispatch(goBack());
                 }
             });
             break;
