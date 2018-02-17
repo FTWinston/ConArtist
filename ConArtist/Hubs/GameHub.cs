@@ -34,7 +34,7 @@ namespace ConArtist.Hubs
         private const string GameID = "GameID";
         private const string PlayerID = "PlayerID";
 
-        public async Task<string> CreateGame(int numSimultaneousDrawings, int numDrawSteps, bool canChoose)
+        public string CreateGame(int numSimultaneousDrawings, int numDrawSteps, bool canChoose)
         {
             var game = GameService.CreateGame(numSimultaneousDrawings, numDrawSteps, canChoose);
 
@@ -47,8 +47,6 @@ namespace ConArtist.Hubs
             game.LineAdded += async (o, e) => await SendNewLine(gameID, e.Player, e.Drawing);
             game.VoteStarted += async (o, e) => await PromptVote(gameID, e.Drawing);
             game.VoteFinished += async (o, e) => await ShowVoteResult(gameID, e.Drawing);
-
-            await ConnectToGame(game.ID);
 
             return gameID;
         }

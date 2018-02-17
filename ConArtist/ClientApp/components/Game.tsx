@@ -18,26 +18,22 @@ class Game extends React.Component<GameProps, {}> {
         if (this.props.viewMode === ViewMode.NotConnected) {
             return <Redirect to={`/game/${this.props.match.params.gameID}/join`} />
         }
+
+        if (this.props.expandDrawing !== undefined) {
+            let canDraw = this.props.viewMode === ViewMode.DrawLine;
+            return <div className="game game--expanded">
+                {this.renderDrawing(this.props.expandDrawing, canDraw)}
+            </div>
+        }
         
         return <div className="game">
-            <PlayerList players={this.props.allPlayers} busyPlayers={this.props.waitingFor} localPlayer={this.props.localPlayer} />
-            {this.renderDrawings()}
-        </div>;
-    }
-
-    private renderDrawings() {
-        if (this.props.expandDrawing !== undefined) {
-            return <div className="game__drawings">
-                {this.renderDrawing(this.props.expandDrawing, true)}
-            </div>
-        }
-        else {
-            return <div className="game__drawings">
+            <PlayerList players={this.props.allPlayers} busyPlayers={this.props.waitingForPlayers} localPlayer={this.props.localPlayer} />
+            <div className="game__drawings">
                 {this.props.drawings.map(d => this.renderDrawing(d, false))}
             </div>
-        }
+        </div>;
     }
-
+    
     private renderDrawing(drawing: GameStore.Drawing, canDraw: boolean) {
         return <div className="game__drawing">
             <div className="game__drawing__clue">{drawing.clue}</div>

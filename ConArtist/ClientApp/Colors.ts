@@ -11,31 +11,31 @@ export function getColorInfo(id: number) {
         };
         case 2: return {
             name: 'Orange',
-            style: '#f00',
+            style: '#f60',
         };
         case 3: return {
             name: 'Yellow',
-            style: '#f00',
+            style: '#ee0',
         };
         case 4: return {
             name: 'Light Green',
-            style: '#f00',
+            style: '#0d0',
         };
         case 5: return {
             name: 'Dark Green',
-            style: '#f00',
+            style: '#083',
         };
         case 6: return {
             name: 'Light Blue',
-            style: '#f00',
+            style: '#0ce',
         };
         case 7: return {
             name: 'Dark Blue',
-            style: '#f00',
+            style: '#33f',
         };
         case 8: return {
             name: 'Violet',
-            style: '#f00',
+            style: '#c0f',
         };
         default:
             console.error(`Unrecognised color ID: ${id}`);

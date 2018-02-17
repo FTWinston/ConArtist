@@ -16,7 +16,7 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
             let createAction = action as Action as CreateAction;
             setupConnection(store)
                 .then(() => connection.invoke('CreateGame' , createAction.numSimultaneousDrawings , createAction.numDrawSteps, createAction.canChoose))
-                .then((gameID: string) => store.dispatch(push(`/game/${gameID}/join`)));
+                .then((gameID: string) => store.dispatch(push(`/game/${gameID}`)));
             break;
 
         case 'CLIENT_CONNECT_GAME':
@@ -49,7 +49,6 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
                 }
                 else {
                     store.dispatch(actionCreators.setLocalPlayer(playerID));
-                    store.dispatch(goBack());
                 }
             });
             break;
@@ -63,7 +62,7 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
             let addAction = action as Action as AddLineAction;
             connection.invoke('AddLine', addAction.drawingID, addAction.points);
             break;
-
+            
         case 'CLIENT_VOTE':
             let voteAction = action as Action as VoteAction;
             connection.invoke('Vote', voteAction.drawingID, voteAction.suspectPlayerID);

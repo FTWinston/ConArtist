@@ -5,6 +5,7 @@ import { Action, Reducer } from 'redux';
 
 export enum ViewMode {
     NotConnected,
+    Open,
     Idle,
     SetupDrawing,
     DrawLine,
@@ -42,7 +43,7 @@ export interface GameState {
     localPlayer?: PlayerInfo;
     drawings: Drawing[];
     allPlayers: PlayerInfo[];
-    waitingFor: PlayerInfo[];
+    waitingForPlayers: PlayerInfo[];
 }
 
 // -----------------
@@ -234,8 +235,13 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
     let action = rawAction as KnownAction;
     switch (action.type) {
         case 'CLIENT_CREATE_GAME':
+            break; // don't connect to the game you create! Connecting happens when you navigate to it.
         case 'CLIENT_CONNECT_GAME':
         case 'CLIENT_JOIN_GAME':
+            return {
+                ...state,
+                viewMode: ViewMode.Open,
+            };
         case 'CLIENT_SETUP_DRAWING':
         case 'CLIENT_DRAW_LINE':
         case 'CLIENT_VOTE':
@@ -253,13 +259,8 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
 
         case 'SERVER_SET_LOCAL_PLAYER':
             let setAction = action as SetLocalPlayerAction;
-            let matchingPlayers = state.allPlayers.filter(f => f.id === setAction.playerID);
-
+            let matchingPlayers = state.allPlayers.filter(p => p.id === setAction.playerID);
             if (matchingPlayers.length !== 1) {
-                console.error(matchingPlayers.length == 0
-                    ? `Cannot set local player: no player found with ID ${action.playerID}`
-                    : `Cannot set local player: ${matchingPlayers.length} players found with ID ${action.playerID}, should only be one`
-                );
                 break;
             }
 
@@ -269,16 +270,29 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
             };
 
         case 'SERVER_UPDATE_PLAYER_LIST':
+            let localPlayer: PlayerInfo | undefined;
+            if (state.localPlayer !== undefined) {
+                let localPlayerID = state.localPlayer.id;
+                let matchingPlayers = state.allPlayers.filter(p => p.id === localPlayerID);
+                if (matchingPlayers.length === 1) {
+                    localPlayer = matchingPlayers[0];
+                }
+            }
+
+            let waitingPlayerIDs = state.waitingForPlayers.map(w => w.id);
+
             return {
                 ...state,
                 allPlayers: action.players,
+                localPlayer: localPlayer,
+                waitingForPlayers: action.players.filter(p => waitingPlayerIDs.indexOf(p.id) !== -1),
             };
 
         case 'SERVER_UPDATE_BUSY_PLAYERS':
             let waitingAction = action as UpdateBusyPlayersAction;
             return {
                 ...state,
-                waitingFor: state.allPlayers.filter(p => waitingAction.playerIDs.find(id => id === p.id) !== undefined),
+                waitingForPlayers: state.allPlayers.filter(p => waitingAction.playerIDs.indexOf(p.id) !== -1),
             };
 
         case 'SERVER_SHOW_DRAWING_SETUP':
@@ -323,7 +337,7 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
             let votedAction = action as IndicateVotedAction;
             return {
                 ...state,
-                waitingFor: state.waitingFor.filter(p => p.id !== votedAction.playerID),
+                waitingForPlayers: state.waitingForPlayers.filter(p => p.id !== votedAction.playerID),
             };
 
         case 'SERVER_SHOW_VOTE_RESULT':
@@ -355,6 +369,6 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
         viewMode: ViewMode.NotConnected,
         drawings: [],
         allPlayers: [],
-        waitingFor: [],
+        waitingForPlayers: [],
     };
 };

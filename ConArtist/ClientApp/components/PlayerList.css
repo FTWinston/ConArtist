@@ -9,11 +9,12 @@
     flex-direction: row;
     height: 1.5em;
     align-items: stretch;
+    margin-bottom: 0.2em;
 }
 
 .playerListItem__color {
     width: 1.5em;
-    border-radius: 0.2em;
+    border-radius: 0.4em;
 }
 
 .playerListItem--local {

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
-import { RouteComponentProps } from 'react-router-dom';
+import { RouteComponentProps, Redirect } from 'react-router-dom';
 import { ApplicationState } from '../store';
 import * as GameStore from '../store/Game';
 import { ViewMode } from '../store/Game';
@@ -29,6 +29,9 @@ class PlayerSetup extends React.Component<PlayerSetupProps, PlayerSetupState> {
     componentWillMount() {
         if (this.props.viewMode === ViewMode.NotConnected) {
             this.props.connect(this.props.match.params.gameID);
+        }
+        else {
+            this.props.history.push(`/game/${this.props.match.params.gameID}`);
         }
     }
 
@@ -112,6 +115,7 @@ class PlayerSetup extends React.Component<PlayerSetupProps, PlayerSetupState> {
 
     private joinGame() {
         this.props.joinGame(this.state.name, this.state.color);
+        this.props.history.push(`/game/${this.props.match.params.gameID}`);
     }
 
     private spectate() {
