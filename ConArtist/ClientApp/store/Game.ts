@@ -35,6 +35,7 @@ export interface Drawing {
     commissioner: PlayerInfo;
     lines: Line[];
     clue: string;
+    subject?: string;
 }
 
 export interface GameState {
@@ -113,6 +114,10 @@ export interface VoteAction {
     suspectPlayerID: number;
 }
 
+interface RequestStartGameAction {
+    type: 'CLIENT_START_GAME';
+}
+
 interface StartGameAction {
     type: 'SERVER_START_GAME';
 }
@@ -153,8 +158,8 @@ interface ShowEndGameAction {
 // declared type strings (and not any other arbitrary string).
 export type KnownAction = CreateAction | ConnectAction | DisconnectAction | JoinGameAction | SetLocalPlayerAction
     | UpdatePlayerListAction | UpdateBusyPlayersAction | SetupDrawingAction | AddLineAction | DrawLineAction | VoteAction
-    | StartGameAction | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction | IndicateVotedAction
-    | ShowVoteResultAction | ShowEndGameAction;
+    | StartGameAction | RequestStartGameAction | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction
+    | IndicateVotedAction | ShowVoteResultAction | ShowEndGameAction;
 
 // ----------------
 // ACTION CREATORS - These are functions exposed to UI components that will trigger a state transition.
@@ -191,11 +196,20 @@ export const actionCreators = {
         type: 'SERVER_UPDATE_BUSY_PLAYERS',
         playerIDs: playerIDs,
     },
+    requestStartGame: () => <RequestStartGameAction>{
+        type: 'CLIENT_START_GAME',
+    },
     startGame: () => <StartGameAction>{
         type: 'SERVER_START_GAME',
     },
     showDrawingSetup: () => <ShowDrawingSetupAction>{
         type: 'SERVER_SHOW_DRAWING_SETUP',
+    },
+    specifyDrawing: (subject: string, clue: string) => <SetupDrawingAction>{
+        type: 'CLIENT_SETUP_DRAWING',
+        subject: subject,
+        clue: clue,
+        // TODO: option to specify imposter
     },
     showDraw: (drawingID: number) => <ShowDrawAction>{
         type: 'SERVER_SHOW_DRAW',
@@ -234,8 +248,9 @@ export const actionCreators = {
 export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action) => {
     let action = rawAction as KnownAction;
     switch (action.type) {
-        case 'CLIENT_CREATE_GAME':
-            break; // don't connect to the game you create! Connecting happens when you navigate to it.
+        case 'CLIENT_CREATE_GAME': // don't connect to the game you create! Connecting happens when you navigate to it.
+        case 'CLIENT_START_GAME':
+            break;
         case 'CLIENT_CONNECT_GAME':
         case 'CLIENT_JOIN_GAME':
             return {

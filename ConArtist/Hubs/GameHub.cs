@@ -87,6 +87,14 @@ namespace ConArtist.Hubs
             await base.OnDisconnectedAsync(exception);
         }
         
+        public void StartGame()
+        {
+            var gameID = GetIntFromMetadata(GameID).Value;
+            var playerID = GetIntFromMetadata(PlayerID).Value;
+
+            GameService.StartGame(gameID, playerID);
+        }
+
         public void SetupDrawing(string subject, string clue, int? imposterPlayerID = null)
         {
             var gameID = GetIntFromMetadata(GameID).Value;
@@ -131,11 +139,7 @@ namespace ConArtist.Hubs
             switch (status)
             {
                 case GameStatus.Describing:
-                case GameStatus.Drawing:
-                case GameStatus.Voting:
-                case GameStatus.Finished:
-                    break;
-                    // TODO: send whatever depending on new status
+                    Clients.Group(gameID).StartGame(); break;
             }
         }
 

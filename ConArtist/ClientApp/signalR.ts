@@ -53,6 +53,10 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
             });
             break;
 
+        case 'CLIENT_START_GAME':
+            connection.invoke('StartGame');
+            break;
+
         case 'CLIENT_SETUP_DRAWING':
             let setupAction = action as Action as SetupDrawingAction;
             connection.invoke('SetupDrawing', setupAction.subject, setupAction.clue, setupAction.imposterPlayerID);

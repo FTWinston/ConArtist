@@ -52,6 +52,12 @@ namespace ConArtist.Services
                 throw new Exception($"Game {game.ID} status is not '{status}'");
         }
 
+        private void EnsureStatus(Game game, GameStatus status1, GameStatus status2)
+        {
+            if (game.Status != status1 && game.Status != status2)
+                throw new Exception($"Game {game.ID} status is neither '{status1}' or '{status2}'");
+        }
+
         public Game CreateGame(int numSimultaneousDrawings, int numDrawSteps, bool canChooseImposter)
         {
             var game = new Game(CurrentGames.Count, numSimultaneousDrawings, numDrawSteps, canChooseImposter);
@@ -141,22 +147,13 @@ namespace ConArtist.Services
         public void StartGame(int gameID, int playerID)
         {
             Game game = GetGame(gameID);
-            EnsureStatus(game, GameStatus.Open);
             GetPlayer(game, playerID);
-
-            InitializeGame(game);
-        }
-
-        public void RestartGame(int gameID, int playerID)
-        {
-            Game game = GetGame(gameID);
-            EnsureStatus(game, GameStatus.Finished);
-            GetPlayer(game, playerID);
+            EnsureStatus(game, GameStatus.Open, GameStatus.Finished);
 
             game.Drawings.Clear();
             InitializeGame(game);
         }
-
+        
         private void InitializeGame(Game game)
         {
             SetupPlayerOrder(game);
@@ -198,8 +195,8 @@ namespace ConArtist.Services
         public void SetupDrawing(int gameID, int playerID, string subject, string clue, int? imposterPlayerID)
         {
             Game game = GetGame(gameID);
-            EnsureStatus(game, GameStatus.Describing);
             Player player = GetPlayer(game, playerID);
+            EnsureStatus(game, GameStatus.Describing);
 
             if (!player.IsBusy)
                 throw new Exception($"Player {playerID} cannot set up a drawing in game {gameID}");
@@ -238,8 +235,8 @@ namespace ConArtist.Services
         public void AddLine(int gameID, int playerID, int drawingID, Point[] points)
         {
             Game game = GetGame(gameID);
-            EnsureStatus(game, GameStatus.Drawing);
             Player player = GetPlayer(game, playerID);
+            EnsureStatus(game, GameStatus.Drawing);
             Drawing drawing = GetDrawing(game, drawingID);
 
             if (drawing.CurrentDrawer != player)
@@ -316,10 +313,10 @@ namespace ConArtist.Services
         public void Vote(int gameID, int votingPlayerID, int drawingID, int suspectPlayerID)
         {
             Game game = GetGame(gameID);
-            EnsureStatus(game, GameStatus.Voting);
-            Drawing drawing = GetDrawing(game, drawingID);
             Player votingPlayer = GetPlayer(game, votingPlayerID);
             Player suspectPlayer = GetPlayer(game, suspectPlayerID);
+            EnsureStatus(game, GameStatus.Voting);
+            Drawing drawing = GetDrawing(game, drawingID);
 
             if (drawing != game.VoteDrawing)
                 throw new Exception($"Cannot vote on drawing {drawingID} as this is not the one currently being voted on in game {gameID}");
