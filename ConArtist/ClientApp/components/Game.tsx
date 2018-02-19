@@ -23,7 +23,7 @@ class Game extends React.Component<GameProps, {}> {
             case ViewMode.Open:
                 return (
                     <div className="game">
-                        {this.renderPlayerList}
+                        {this.renderPlayerList(false, false)}
                         {this.renderStartButton('Once everyone\'s in the game, click to start it', 'Start game')}
                     </div>
                 );
