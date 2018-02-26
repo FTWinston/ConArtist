@@ -288,7 +288,7 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
             let localPlayer: PlayerInfo | undefined;
             if (state.localPlayer !== undefined) {
                 let localPlayerID = state.localPlayer.id;
-                let matchingPlayers = state.allPlayers.filter(p => p.id === localPlayerID);
+                let matchingPlayers = action.players.filter(p => p.id === localPlayerID);
                 if (matchingPlayers.length === 1) {
                     localPlayer = matchingPlayers[0];
                 }

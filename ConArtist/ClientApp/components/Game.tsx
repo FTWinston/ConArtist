@@ -136,7 +136,7 @@ class Game extends React.Component<GameProps, {}> {
         return (
             <div className="game__buttonPrompt">
                 <p>{prompt}</p>
-                <button type="button" className="game_button" onClick={() => this.props.startGame()}>{text}</button>
+                <button type="button" className="game_button" onClick={() => this.props.requestStartGame()}>{text}</button>
             </div>
         );
     }
