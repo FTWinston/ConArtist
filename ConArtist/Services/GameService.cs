@@ -1,4 +1,6 @@
-﻿using ConArtist.Model;
+﻿using ConArtist.Hubs;
+using ConArtist.Model;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,10 +10,16 @@ namespace ConArtist.Services
 {
     public class GameService
     {
-        private Dictionary<int, Game> CurrentGames { get; } = new Dictionary<int, Game>();
-        private Random random = new Random();
+        public GameService(IHubContext<GameHub, IGameHubCommands> hubContext)
+        {
+            HubContext = hubContext;
+        }
 
-        private Game GetGame(int gameID)
+        private static Dictionary<int, Game> CurrentGames { get; } = new Dictionary<int, Game>();
+        private IHubContext<GameHub, IGameHubCommands> HubContext { get; }
+        private Random random = new Random();
+        
+        private static Game GetGame(int gameID)
         {
             if (CurrentGames.TryGetValue(gameID, out Game game))
                 return game;
@@ -19,7 +27,7 @@ namespace ConArtist.Services
             throw new Exception($"Game not found: {gameID}");
         }
 
-        private Player GetPlayer(Game game, int playerID)
+        private static Player GetPlayer(Game game, int playerID)
         {
             if (game.Players.TryGetValue(playerID, out Player player))
                 return player;
@@ -27,7 +35,7 @@ namespace ConArtist.Services
             throw new Exception($"Player not found in game {game.ID}: {playerID}");
         }
 
-        private Drawing GetDrawing(Game game, int drawingID)
+        private static Drawing GetDrawing(Game game, int drawingID)
         {
             if (game.Drawings.TryGetValue(drawingID, out Drawing drawing))
                 return drawing;
@@ -64,10 +72,65 @@ namespace ConArtist.Services
             CurrentGames.Add(game.ID, game);
 
             // TODO: if no one joins, remove it after a short period
+            
+            game.StatusChanged += (o, e) => StatusChanged(e.Game.ID.ToString(), e.Game.Status);
+            game.WaitingForPlayers += async (o, e) => await SendWaitingForPlayers(e.Game.ID.ToString(), e.Game.Players.Values);
+            game.OwnerSelected += async (o, e) => await PromptSetupDrawing(e.Game.ID.ToString(), e.Player);
+            game.PromptDraw += async (o, e) => await PromptDraw(e.Game.ID.ToString(), e.Player, e.Drawing);
+            game.LineAdded += async (o, e) => await SendNewLine(e.Game.ID.ToString(), e.Player, e.Drawing);
+            game.VoteStarted += async (o, e) => await PromptVote(e.Game.ID.ToString(), e.Drawing);
+            game.VoteFinished += async (o, e) => await ShowVoteResult(e.Game.ID.ToString(), e.Drawing);
 
             return game;
         }
 
+        private void StatusChanged(string gameID, GameStatus status)
+        {
+            switch (status)
+            {
+                case GameStatus.Describing:
+                    HubContext.Clients.Group(gameID).StartGame(); break;
+            }
+        }
+
+        private async Task SendWaitingForPlayers(string gameID, IReadOnlyCollection<Player> players)
+        {
+            var playerIDs = players
+                .Where(p => p.IsBusy)
+                .Select(p => p.ID)
+                .ToArray();
+
+            var group = HubContext.Clients.Group(gameID);
+            await group.WaitingForPlayers(playerIDs);
+        }
+
+        private async Task PromptSetupDrawing(string gameID, Player player)
+        {
+            await HubContext.Clients.Client(player.ConnectionID).PromptSetupDrawing();
+        }
+
+        private async Task PromptDraw(string gameID, Player player, Drawing drawing)
+        {
+            await HubContext.Clients.Client(player.ConnectionID).PromptDraw(drawing.ID);
+        }
+
+        private async Task SendNewLine(string gameID, Player player, Drawing drawing)
+        {
+            var group = HubContext.Clients.Group(gameID);
+            var points = drawing.Lines.Last().Points;
+            await group.AddLine(player.ID, drawing.ID, points);
+        }
+
+        private async Task PromptVote(string gameID, Drawing drawing)
+        {
+            await HubContext.Clients.Group(gameID.ToString()).PromptVote(drawing.ID);
+        }
+
+        private async Task ShowVoteResult(string gameID, Drawing drawing)
+        {
+            await HubContext.Clients.Group(gameID.ToString()).ShowVoteResult(drawing.ID, drawing.Votes.Keys, drawing.Votes.Values);
+        }
+        
         public IReadOnlyCollection<Player> ListPlayers(int gameID)
         {
             Game game = GetGame(gameID);

@@ -37,18 +37,7 @@ namespace ConArtist.Hubs
         public string CreateGame(int numSimultaneousDrawings, int numDrawSteps, bool canChoose)
         {
             var game = GameService.CreateGame(numSimultaneousDrawings, numDrawSteps, canChoose);
-
-            string gameID = game.ID.ToString();
-
-            game.StatusChanged += (o, e) => StatusChanged(gameID, e.Game.Status);
-            game.WaitingForPlayers += async (o, e) => await SendWaitingForPlayers(gameID, e.Game.Players.Values);
-            game.OwnerSelected += async (o, e) => await PromptSetupDrawing(gameID, e.Player);
-            game.PromptDraw += async (o, e) => await PromptDraw(gameID, e.Player, e.Drawing);
-            game.LineAdded += async (o, e) => await SendNewLine(gameID, e.Player, e.Drawing);
-            game.VoteStarted += async (o, e) => await PromptVote(gameID, e.Drawing);
-            game.VoteFinished += async (o, e) => await ShowVoteResult(gameID, e.Drawing);
-
-            return gameID;
+            return game.ID.ToString();
         }
         
         public async Task<bool> ConnectToGame(int gameID)
@@ -132,53 +121,6 @@ namespace ConArtist.Hubs
         {
             var players = GameService.ListPlayers(gameID);
             await Clients.Group(gameID.ToString()).ListPlayers(players);
-        }
-
-        private void StatusChanged(string gameID, GameStatus status)
-        {
-            switch (status)
-            {
-                case GameStatus.Describing:
-                    Clients.Group(gameID).StartGame(); break;
-            }
-        }
-
-        private async Task SendWaitingForPlayers(string gameID, IReadOnlyCollection<Player> players)
-        {
-            var playerIDs = players
-                .Where(p => p.IsBusy)
-                .Select(p => p.ID)
-                .ToArray();
-
-            var group = Clients.Group(gameID);
-            await group.WaitingForPlayers(playerIDs);
-        }
-
-        private async Task PromptSetupDrawing(string gameID, Player player)
-        {
-            await Clients.Client(player.ConnectionID).PromptSetupDrawing();
-        }
-
-        private async Task PromptDraw(string gameID, Player player, Drawing drawing)
-        {
-            await Clients.Client(player.ConnectionID).PromptDraw(drawing.ID);
-        }
-
-        private async Task SendNewLine(string gameID, Player player, Drawing drawing)
-        {
-            var group = Clients.Group(gameID);
-            var points = drawing.Lines.Last().Points;
-            await group.AddLine(player.ID, drawing.ID, points);
-        }
-
-        private async Task PromptVote(string gameID, Drawing drawing)
-        {
-            await Clients.Group(gameID.ToString()).PromptVote(drawing.ID);
-        }
-
-        private async Task ShowVoteResult(string gameID, Drawing drawing)
-        {
-            await Clients.Group(gameID.ToString()).ShowVoteResult(drawing.ID, drawing.Votes.Keys, drawing.Votes.Values);
         }
     }
 }
