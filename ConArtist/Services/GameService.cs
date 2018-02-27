@@ -73,7 +73,6 @@ namespace ConArtist.Services
 
             // TODO: if no one joins, remove it after a short period
             
-            game.StatusChanged += (o, e) => StatusChanged(e.Game.ID.ToString(), e.Game.Status);
             game.WaitingForPlayers += async (o, e) => await SendWaitingForPlayers(e.Game.ID.ToString(), e.Game.Players.Values);
             game.OwnerSelected += async (o, e) => await PromptSetupDrawing(e.Game.ID.ToString(), e.Player);
             game.PromptDraw += async (o, e) => await PromptDraw(e.Game.ID.ToString(), e.Player, e.Drawing);
@@ -82,15 +81,6 @@ namespace ConArtist.Services
             game.VoteFinished += async (o, e) => await ShowVoteResult(e.Game.ID.ToString(), e.Drawing);
 
             return game;
-        }
-
-        private void StatusChanged(string gameID, GameStatus status)
-        {
-            switch (status)
-            {
-                case GameStatus.Describing:
-                    HubContext.Clients.Group(gameID).StartGame(); break;
-            }
         }
 
         private async Task SendWaitingForPlayers(string gameID, IReadOnlyCollection<Player> players)
@@ -227,7 +217,7 @@ namespace ConArtist.Services
         private void AllocateOwners(Game game)
         {
             var ownerPlayers = new List<Player>();
-            int numDrawings = Math.Max(game.NumSimultaneousDrawings, game.Players.Count);
+            int numDrawings = Math.Min(game.NumSimultaneousDrawings, game.Players.Count);
 
             for (int iDrawing = 0; iDrawing < numDrawings; iDrawing++)
             {

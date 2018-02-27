@@ -15,22 +15,10 @@ namespace ConArtist.Model
         }
 
         public int ID { get; }
+        public GameStatus Status { get; set; } = GameStatus.Open;
 
-        private GameStatus _status = GameStatus.Open;
-        public GameStatus Status
-        {
-            get { return _status; }
-            set
-            {
-                _status = value;
-                StatusChanged?.Invoke(this, new GameEventArgs(this));
-            }
-        }
-        
         public Dictionary<int, Player> Players { get; } = new Dictionary<int, Player>();
-
         public Dictionary<int, Player> NextPlayers { get; } = new Dictionary<int, Player>();
-
         public Dictionary<int, Drawing> Drawings { get; } = new Dictionary<int, Drawing>();
 
         public int NumSimultaneousDrawings { get; }
@@ -75,6 +63,6 @@ namespace ConArtist.Model
             VoteFinished?.Invoke(this, new GameEventArgs(this, drawing));
         }
 
-        public event EventHandler<GameEventArgs> StatusChanged, OwnerSelected, WaitingForPlayers, PromptDraw, LineAdded, VoteStarted, VoteFinished;
+        public event EventHandler<GameEventArgs> OwnerSelected, WaitingForPlayers, PromptDraw, LineAdded, VoteStarted, VoteFinished;
     }
 }

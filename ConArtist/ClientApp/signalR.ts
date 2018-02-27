@@ -88,9 +88,7 @@ export async function setupConnection(store: any) {
     connection.on('ListPlayers', (players: PlayerInfo[]) => store.dispatch(actionCreators.listPlayers(players)));
 
     connection.on('WaitingForPlayers', (ids: number[]) => store.dispatch(actionCreators.waitingFor(ids)));
-
-    connection.on('StartGame', () => store.dispatch(actionCreators.startGame()));
-
+    
     connection.on('PromptSetupDrawing', () => store.dispatch(actionCreators.showDrawingSetup()));
 
     connection.on('PromptDraw', (drawingID: number) => store.dispatch(actionCreators.showDraw(drawingID)));

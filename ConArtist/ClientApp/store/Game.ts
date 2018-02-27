@@ -118,10 +118,6 @@ interface RequestStartGameAction {
     type: 'CLIENT_START_GAME';
 }
 
-interface StartGameAction {
-    type: 'SERVER_START_GAME';
-}
-
 interface ShowDrawingSetupAction {
     type: 'SERVER_SHOW_DRAWING_SETUP';
 }
@@ -158,7 +154,7 @@ interface ShowEndGameAction {
 // declared type strings (and not any other arbitrary string).
 export type KnownAction = CreateAction | ConnectAction | DisconnectAction | JoinGameAction | SetLocalPlayerAction
     | UpdatePlayerListAction | UpdateBusyPlayersAction | SetupDrawingAction | AddLineAction | DrawLineAction | VoteAction
-    | StartGameAction | RequestStartGameAction | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction
+    | RequestStartGameAction | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction
     | IndicateVotedAction | ShowVoteResultAction | ShowEndGameAction;
 
 // ----------------
@@ -198,9 +194,6 @@ export const actionCreators = {
     },
     requestStartGame: () => <RequestStartGameAction>{
         type: 'CLIENT_START_GAME',
-    },
-    startGame: () => <StartGameAction>{
-        type: 'SERVER_START_GAME',
     },
     showDrawingSetup: () => <ShowDrawingSetupAction>{
         type: 'SERVER_SHOW_DRAWING_SETUP',
@@ -260,7 +253,6 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
         case 'CLIENT_SETUP_DRAWING':
         case 'CLIENT_DRAW_LINE':
         case 'CLIENT_VOTE':
-        case 'SERVER_START_GAME':
             return {
                 ...state,
                 viewMode: ViewMode.Idle,
@@ -305,9 +297,13 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
 
         case 'SERVER_UPDATE_BUSY_PLAYERS':
             let waitingAction = action as UpdateBusyPlayersAction;
+            let viewMode = state.localPlayer === undefined || waitingAction.playerIDs.indexOf(state.localPlayer.id) === -1
+                ? ViewMode.Idle : state.viewMode;
+
             return {
                 ...state,
                 waitingForPlayers: state.allPlayers.filter(p => waitingAction.playerIDs.indexOf(p.id) !== -1),
+                viewMode: viewMode,
             };
 
         case 'SERVER_SHOW_DRAWING_SETUP':
