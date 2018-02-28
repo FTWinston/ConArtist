@@ -245,13 +245,13 @@ namespace ConArtist.Services
             return entries;
         }
 
-        public void SetupDrawing(int gameID, int playerID, string subject, string clue, int? imposterPlayerID)
+        public async Task SetupDrawing(int gameID, int playerID, string subject, string clue, int? imposterPlayerID)
         {
             Game game = GetGame(gameID);
-            Player player = GetPlayer(game, playerID);
+            Player commissioner = GetPlayer(game, playerID);
             EnsureStatus(game, GameStatus.Describing);
 
-            if (!player.IsBusy)
+            if (!commissioner.IsBusy)
                 throw new Exception($"Player {playerID} cannot set up a drawing in game {gameID}");
 
             if (imposterPlayerID.HasValue != game.CanChooseImposter)
@@ -262,17 +262,24 @@ namespace ConArtist.Services
                     throw new Exception($"Player {playerID} cannot select an imposter player in game {gameID}");
             }
             
-            player.IsBusy = false;
+            commissioner.IsBusy = false;
 
             Player imposter;
             if (imposterPlayerID.HasValue)
                 imposter = GetPlayer(game, imposterPlayerID.Value);
             else
-                imposter = SelectRandomPlayer(game, player);
+                imposter = SelectRandomPlayer(game, commissioner);
 
-            var drawing = new Drawing(game.Drawings.Count, player, imposter, subject, clue);
+            var drawing = new Drawing(game.Drawings.Count, commissioner, imposter, subject, clue);
             game.Drawings.Add(drawing.ID, drawing);
 
+            // remove imposter from group so that drawing can be sent to all players & spectators except them
+            // also send them the drawing, with no subject, then add them back into the group
+            await HubContext.Groups.RemoveAsync(imposter.ConnectionID, gameID.ToString());
+            await HubContext.Clients.Group(gameID.ToString()).AddDrawing(drawing.ID, commissioner.ID, clue, subject);
+            await HubContext.Clients.Client(imposter.ConnectionID).AddDrawing(drawing.ID, commissioner.ID, clue, null);
+            await HubContext.Groups.AddAsync(imposter.ConnectionID, gameID.ToString());
+            
             if (HaveAllDrawingsBeenAdded(game))
             {
                 game.Status = GameStatus.Drawing;

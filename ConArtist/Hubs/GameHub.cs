@@ -13,6 +13,7 @@ namespace ConArtist.Hubs
         Task ListPlayers(IReadOnlyCollection<IPlayer> players);
         Task StartGame();
         Task PromptSetupDrawing();
+        Task AddDrawing(int drawingID, int playerID, string subject, string clue);
         Task WaitingForPlayers(int[] playerIDs);
         Task PromptDraw(int drawingID);
         Task AddLine(int playerID, int drawingID, Point[] points);
@@ -84,11 +85,11 @@ namespace ConArtist.Hubs
             GameService.StartGame(gameID, playerID);
         }
 
-        public void SetupDrawing(string subject, string clue, int? imposterPlayerID = null)
+        public async void SetupDrawing(string subject, string clue, int? imposterPlayerID = null)
         {
             var gameID = GetIntFromMetadata(GameID).Value;
             var playerID = GetIntFromMetadata(PlayerID).Value;
-            GameService.SetupDrawing(gameID, playerID, subject, clue, imposterPlayerID);
+            await GameService.SetupDrawing(gameID, playerID, subject, clue, imposterPlayerID);
         }
 
         public void AddLine(int drawingID, Point[] points)

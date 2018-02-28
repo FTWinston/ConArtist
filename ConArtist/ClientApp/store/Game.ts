@@ -89,11 +89,19 @@ interface UpdateBusyPlayersAction {
     playerIDs: number[];
 }
 
-export interface SetupDrawingAction {
+export interface CommissionDrawingAction {
     type: 'CLIENT_SETUP_DRAWING';
     subject: string;
     clue: string;
     imposterPlayerID?: number;
+}
+
+export interface CreateDrawingAction {
+    type: 'SERVER_SETUP_DRAWING';
+    id: number;
+    subject?: string;
+    clue: string;
+    commisionerPlayerID: number;
 }
 
 export interface AddLineAction {
@@ -153,8 +161,8 @@ interface ShowEndGameAction {
 // Declare a 'discriminated union' type. This guarantees that all references to 'type' properties contain one of the
 // declared type strings (and not any other arbitrary string).
 export type KnownAction = CreateAction | ConnectAction | DisconnectAction | JoinGameAction | SetLocalPlayerAction
-    | UpdatePlayerListAction | UpdateBusyPlayersAction | SetupDrawingAction | AddLineAction | DrawLineAction | VoteAction
-    | RequestStartGameAction | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction
+    | UpdatePlayerListAction | UpdateBusyPlayersAction | CommissionDrawingAction | CreateDrawingAction | AddLineAction
+    | DrawLineAction | VoteAction | RequestStartGameAction | ShowDrawingSetupAction | ShowDrawAction | ShowVoteAction
     | IndicateVotedAction | ShowVoteResultAction | ShowEndGameAction;
 
 // ----------------
@@ -198,11 +206,18 @@ export const actionCreators = {
     showDrawingSetup: () => <ShowDrawingSetupAction>{
         type: 'SERVER_SHOW_DRAWING_SETUP',
     },
-    specifyDrawing: (subject: string, clue: string) => <SetupDrawingAction>{
+    commissionDrawing: (subject: string, clue: string) => <CommissionDrawingAction>{
         type: 'CLIENT_SETUP_DRAWING',
         subject: subject,
         clue: clue,
         // TODO: option to specify imposter
+    },
+    createDrawing: (id: number, subject: string, clue: string, commissionerPlayerID: number) => <CreateDrawingAction>{
+        type: 'SERVER_SETUP_DRAWING',
+        id: id,
+        subject: subject,
+        clue: clue,
+        commisionerPlayerID: commissionerPlayerID,
     },
     showDraw: (drawingID: number) => <ShowDrawAction>{
         type: 'SERVER_SHOW_DRAW',
@@ -264,6 +279,21 @@ export const reducer: Reducer<GameState> = (state: GameState, rawAction: Action)
                 viewMode: ViewMode.NotConnected,
             };
 
+        case 'SERVER_SETUP_DRAWING':
+            let playerID = action.commisionerPlayerID;
+            let newDrawing: Drawing = {
+                id: action.id,
+                commissioner: state.allPlayers.filter(p => p.id === playerID)[0],
+                lines: [],
+                clue: action.clue,
+                subject: action.subject,
+            };
+
+            return {
+                ...state,
+                drawings: state.drawings.concat([newDrawing]),
+            }
+            
         case 'SERVER_SET_LOCAL_PLAYER':
             let setAction = action as SetLocalPlayerAction;
             let matchingPlayers = state.allPlayers.filter(p => p.id === setAction.playerID);

@@ -45,7 +45,7 @@ class Game extends React.Component<GameProps, {}> {
                 );
 
             case ViewMode.SetupDrawing:
-                return <DrawingSetup setupDrawing={(subject, clue,) => this.props.specifyDrawing(subject, clue)} />
+                return <DrawingSetup setupDrawing={(subject, clue,) => this.props.commissionDrawing(subject, clue)} />
 
             case ViewMode.DrawLine:
                 return (

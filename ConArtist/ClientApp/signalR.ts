@@ -2,7 +2,7 @@ import * as signalR from '@aspnet/signalr-client';
 import { ApplicationState } from './store';
 import { Action, Middleware, Store } from 'redux';
 import { goBack, push } from 'react-router-redux';
-import { actionCreators, CreateAction, ConnectAction, JoinGameAction, SetupDrawingAction, AddLineAction, VoteAction, PlayerInfo, Point, ViewMode } from './store/Game';
+import { actionCreators, CreateAction, ConnectAction, JoinGameAction, CommissionDrawingAction, AddLineAction, VoteAction, PlayerInfo, Point, ViewMode } from './store/Game';
 
 let connection: signalR.HubConnection;
 
@@ -58,7 +58,7 @@ export const signalrMiddleware: Middleware = store => next => async <A extends A
             break;
 
         case 'CLIENT_SETUP_DRAWING':
-            let setupAction = action as Action as SetupDrawingAction;
+            let setupAction = action as Action as CommissionDrawingAction;
             connection.invoke('SetupDrawing', setupAction.subject, setupAction.clue, setupAction.imposterPlayerID);
             break;
 
@@ -90,6 +90,8 @@ export async function setupConnection(store: any) {
     connection.on('WaitingForPlayers', (ids: number[]) => store.dispatch(actionCreators.waitingFor(ids)));
     
     connection.on('PromptSetupDrawing', () => store.dispatch(actionCreators.showDrawingSetup()));
+
+    connection.on('AddDrawing', (drawingID, playerID, subject, clue) => store.dispatch(actionCreators.createDrawing(drawingID, subject, clue === null ? undefined : clue, playerID)));
 
     connection.on('PromptDraw', (drawingID: number) => store.dispatch(actionCreators.showDraw(drawingID)));
 
