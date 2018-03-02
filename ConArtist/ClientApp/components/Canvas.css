@@ -1,6 +1,7 @@
 .canvas {
     overflow: hidden;
     position: relative;
+    min-height: 50px;
 }
 
 .canvas__element {

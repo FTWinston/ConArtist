@@ -102,7 +102,7 @@ class Game extends React.Component<GameProps, {}> {
     private renderAllDrawings() {
         return (
             <div className="game__drawings">
-                {this.props.drawings.map(d => this.renderDrawing(d, false))}
+                {this.props.drawings.map(d => this.renderDrawing(d, false, false))}
             </div>
         );
     }
@@ -112,10 +112,10 @@ class Game extends React.Component<GameProps, {}> {
             return <div />
         }
 
-        return this.renderDrawing(this.props.expandDrawing, canDraw);
+        return this.renderDrawing(this.props.expandDrawing, canDraw, true);
     }
 
-    private renderDrawing(drawing: GameStore.Drawing, canDraw: boolean) {
+    private renderDrawing(drawing: GameStore.Drawing, canDraw: boolean, expanded: boolean) {
         let description = [
             <div key="clue" className="drawing__clue">{drawing.clue}</div>
         ];
@@ -125,9 +125,9 @@ class Game extends React.Component<GameProps, {}> {
         }
 
         return (
-            <div className="drawing">
+            <div className={expanded ? 'drawing drawing--expanded' : 'drawing'} key={drawing.id}>
                 <div className="drawing__description">{description}</div>
-                <Canvas lines={drawing.lines} drawingPlayer={canDraw ? this.props.localPlayer : undefined} />;
+                <Canvas lines={drawing.lines} drawingPlayer={canDraw ? this.props.localPlayer : undefined} />
             </div>
         );
     }
